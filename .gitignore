@@ -9,6 +9,9 @@ obj/
 *.cache
 *.log
 
+# Javascript
+node_modules/
+
 # Docker
 docker-compose.override.yml
 

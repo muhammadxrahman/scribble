@@ -16,7 +16,7 @@ public class DocumentService
         _context = context;
     }
 
-    public async Task<DocumentResponse?> CreateDocumentAsync(int userId, CreateDocumentRequest request)
+    public async Task<DocumentResponse?> CreateDocumentAsync(Guid userId, CreateDocumentRequest request)
     {
         // Check if user already has 5 documents
         var userDocumentCount = await _context.Documents.CountAsync(d => d.OwnerId == userId);
@@ -42,7 +42,7 @@ public class DocumentService
     }
 
 
-    public async Task<List<DocumentResponse>> GetUserDocumentsAsync(int userId)
+    public async Task<List<DocumentResponse>> GetUserDocumentsAsync(Guid userId)
     {
         var documents = await _context.Documents
             .Where(d => d.OwnerId == userId)
@@ -65,7 +65,7 @@ public class DocumentService
     }
 
 
-    public async Task<DocumentResponse?> GetDocumentByIdAsync(int documentId, int userId)
+    public async Task<DocumentResponse?> GetDocumentByIdAsync(Guid documentId, Guid userId)
     {
         var document = await _context.Documents
             .Include(d => d.Owner)
@@ -97,7 +97,7 @@ public class DocumentService
     }
 
 
-    public async Task<DocumentResponse?> UpdateDocumentAsync(int documentId, int userId, UpdateDocumentRequest request)
+    public async Task<DocumentResponse?> UpdateDocumentAsync(Guid documentId, Guid userId, UpdateDocumentRequest request)
     {
         var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
 
@@ -135,7 +135,7 @@ public class DocumentService
     }
 
 
-    public async Task<bool> DeleteDocumentAsync(int documentId, int userId)
+    public async Task<bool> DeleteDocumentAsync(Guid documentId, Guid userId)
     {
         var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
 
@@ -151,7 +151,7 @@ public class DocumentService
     }
 
 
-    private async Task<DocumentResponse?> GetDocumentResponseAsync(int documentId)
+    private async Task<DocumentResponse?> GetDocumentResponseAsync(Guid documentId)
     {
         var document = await _context.Documents
             .Include(d => d.Owner)

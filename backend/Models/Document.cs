@@ -2,9 +2,9 @@ namespace ScribbleAPI.Models;
 
 public class Document
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
     
-    public required int OwnerId { get; set; }
+    public required Guid OwnerId { get; set; }
     
     public required string Title { get; set; }
     

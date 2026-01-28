@@ -43,6 +43,24 @@ services:
     networks:
       - scribble-network
 
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${BACKEND_PORT}/api
+    container_name: scribble-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT}/api
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    networks:
+      - scribble-network
+
 networks:
   scribble-network:
     driver: bridge

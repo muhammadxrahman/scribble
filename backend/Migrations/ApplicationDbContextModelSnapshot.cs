@@ -24,11 +24,9 @@ namespace ScribbleAPI.Migrations
 
             modelBuilder.Entity("ScribbleAPI.Models.Document", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<int>("CharacterCount")
                         .HasColumnType("integer");
@@ -40,8 +38,8 @@ namespace ScribbleAPI.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -66,8 +64,8 @@ namespace ScribbleAPI.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("DocumentId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Permission")
                         .HasColumnType("integer");
@@ -75,8 +73,8 @@ namespace ScribbleAPI.Migrations
                     b.Property<DateTime>("SharedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -103,11 +101,11 @@ namespace ScribbleAPI.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("CreatedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("DocumentId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("DocumentId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("VersionNumber")
                         .HasColumnType("integer");
@@ -122,11 +120,9 @@ namespace ScribbleAPI.Migrations
 
             modelBuilder.Entity("ScribbleAPI.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

@@ -12,7 +12,7 @@ public class HealthController : ControllerBase
         return Ok(new { 
             status = "healthy", 
             timestamp = DateTime.UtcNow,
-            message = "Scribble API is running!" 
+            message = "Scribble API is running." 
         });
     }
 }

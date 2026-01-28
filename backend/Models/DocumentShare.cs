@@ -10,9 +10,9 @@ public class DocumentShare
 {
     public int Id { get; set; }
     
-    public required int DocumentId { get; set; }
+    public required Guid DocumentId { get; set; }
     
-    public required int UserId { get; set; }
+    public required Guid UserId { get; set; }
     
     public required Permission Permission { get; set; }
     
