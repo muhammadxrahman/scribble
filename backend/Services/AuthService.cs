@@ -124,5 +124,45 @@ public class AuthService
         };
 
     }
+
+    public async Task<bool> BlacklistTokenAsync(string token)
+    {
+        try
+        {
+            // Parse token to get expiration
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var expiresAt = jwtToken.ValidTo;
+
+            // Check if already blacklisted
+            var exists = await _context.TokenBlacklist.AnyAsync(t => t.Token == token);
+            if (exists)
+            {
+                return true;
+            }
+
+            // Add to blacklist
+            var blacklistedToken = new TokenBlacklist
+            {
+                Token = token,
+                BlacklistedAt = DateTime.UtcNow,
+                ExpiresAt = expiresAt
+            };
+
+            _context.TokenBlacklist.Add(blacklistedToken);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> IsTokenBlacklistedAsync(string token)
+    {
+        return await _context.TokenBlacklist.AnyAsync(t => t.Token == token);
+    }
     
 }

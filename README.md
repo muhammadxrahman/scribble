@@ -25,19 +25,17 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - Document editor
 
 ### Phase 3 (Planned)
+- Document sharing with permissions
+- Read/Edit access control
 - Real-time collaboration with SignalR
 - Rich text editing with ProseMirror
 - Live cursors and presence
 
 ### Phase 4 (Planned)
-- Document sharing with permissions
-- Read/Edit access control
-
-### Phase 5 (Planned)
 - Version history
 - Revert to previous versions
 
-### Phase 6 (Planned)
+### Phase 5 (Planned)
 - Python AI microservice
 - Text summarization
 - Grammar checking

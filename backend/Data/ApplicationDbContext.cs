@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Document> Documents { get; set; }
     public DbSet<DocumentShare> DocumentShares { get; set; }
     public DbSet<DocumentVersion> DocumentVersions { get; set; }
+    public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -79,6 +80,13 @@ public class ApplicationDbContext : DbContext
                 .WithMany(d => d.Versions)
                 .HasForeignKey(dv => dv.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TokenBlacklist>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.Property(e => e.Token).HasMaxLength(500);
         });
 
     }

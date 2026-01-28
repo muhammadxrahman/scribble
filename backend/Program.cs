@@ -10,6 +10,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Services to container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+// cors
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Frontend URL
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -82,6 +93,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+app.UseMiddleware<ScribbleAPI.Middleware.TokenBlacklistMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
