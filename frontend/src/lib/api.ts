@@ -85,7 +85,7 @@ export const documentsApi = {
   },
 
   getById: async (id: string): Promise<Document> => {
-    const response = await api.get(`/Documents/${id}`);
+    const response = await api.get(`/Document/${id}`);
     return response.data;
   },
 
