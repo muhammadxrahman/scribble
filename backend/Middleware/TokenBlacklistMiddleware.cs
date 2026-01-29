@@ -14,6 +14,14 @@ public class TokenBlacklistMiddleware
 
     public async Task InvokeAsync(HttpContext context, ApplicationDbContext dbContext)
     {
+
+        // Skip token blacklist check for SignalR negotiate
+        if (context.Request.Path.StartsWithSegments("/hubs"))
+        {
+            await _next(context);
+            return;
+        }
+
         // Get token from Authorization header
         var authHeader = context.Request.Headers["Authorization"].ToString();
         
