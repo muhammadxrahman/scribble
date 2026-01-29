@@ -21,8 +21,10 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 
 ### Phase 2 (In Progress)
 - Next.js frontend
+- Protected routes
 - Dashboard
-- Document editor
+- Document editor with auto-save
+- Real-time character counting
 
 ### Phase 3 (Planned)
 - Document sharing with permissions
