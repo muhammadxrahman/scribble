@@ -1,8 +1,19 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import { authApi, AuthResponse, RegisterRequest, LoginRequest } from '@/lib/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { useRouter } from "next/navigation";
+import {
+  authApi,
+  AuthResponse,
+  RegisterRequest,
+  LoginRequest,
+} from "@/lib/api";
 
 interface AuthContextType {
   user: AuthResponse | null;
@@ -22,8 +33,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
 
     if (token && userData) {
       setUser(JSON.parse(userData));
@@ -33,32 +44,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginRequest) => {
     const response = await authApi.login(data);
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response));
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response));
     setUser(response);
-    router.push('/dashboard');
+    router.push("/dashboard");
   };
 
   const register = async (data: RegisterRequest) => {
     const response = await authApi.register(data);
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response));
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response));
     setUser(response);
-    router.push('/dashboard');
+    router.push("/dashboard");
   };
 
   const logout = async () => {
     try {
-        // Call backend logout endpoint to blacklist token
-        await authApi.logout();
+      // Call backend logout endpoint to blacklist token
+      await authApi.logout();
     } catch (err) {
-        // Even if backend call fails, still clear local storage
-        console.error('Logout error:', err);
+      // Even if backend call fails, still clear local storage
+      console.error("Logout error:", err);
     } finally {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
-        router.push('/login');
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+      router.push("/login");
     }
   };
 
@@ -81,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

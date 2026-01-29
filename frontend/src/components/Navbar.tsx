@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -19,10 +19,7 @@ export default function Navbar() {
               <span className="text-white me-3">
                 Welcome, {user.displayName}
               </span>
-              <button 
-                className="btn btn-outline-light btn-sm" 
-                onClick={logout}
-              >
+              <button className="btn btn-outline-light btn-sm" onClick={logout}>
                 Logout
               </button>
             </>

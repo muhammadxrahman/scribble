@@ -17,7 +17,5 @@ public class RegisterRequest
     [StringLength(100, MinimumLength = 8)]
     public required string Password { get; set; }
     
-    [Required]
-    [StringLength(100, MinimumLength = 1)]
     public required string DisplayName { get; set; }
 }

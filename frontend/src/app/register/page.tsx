@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    displayName: '',
+    username: "",
+    email: "",
+    password: "",
+    displayName: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await register(formData);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -122,13 +122,13 @@ export default function RegisterPage() {
                   className="btn btn-primary w-100"
                   disabled={loading}
                 >
-                  {loading ? 'Creating account...' : 'Register'}
+                  {loading ? "Creating account..." : "Register"}
                 </button>
               </form>
 
               <div className="text-center mt-3">
                 <p className="text-muted">
-                  Already have an account?{' '}
+                  Already have an account?{" "}
                   <Link href="/login" className="text-decoration-none">
                     Login here
                   </Link>

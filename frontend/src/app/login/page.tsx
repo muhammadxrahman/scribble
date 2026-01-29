@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    usernameOrEmail: '',
-    password: '',
+    usernameOrEmail: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       await login(formData);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials');
+      setError(err.response?.data?.message || "Invalid credentials");
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,10 @@ export default function LoginPage() {
                     id="usernameOrEmail"
                     value={formData.usernameOrEmail}
                     onChange={(e) =>
-                      setFormData({ ...formData, usernameOrEmail: e.target.value })
+                      setFormData({
+                        ...formData,
+                        usernameOrEmail: e.target.value,
+                      })
                     }
                     required
                   />
@@ -79,13 +82,13 @@ export default function LoginPage() {
                   className="btn btn-primary w-100"
                   disabled={loading}
                 >
-                  {loading ? 'Logging in...' : 'Login'}
+                  {loading ? "Logging in..." : "Login"}
                 </button>
               </form>
 
               <div className="text-center mt-3">
                 <p className="text-muted">
-                  Don't have an account?{' '}
+                  Don't have an account?{" "}
                   <Link href="/register" className="text-decoration-none">
                     Register here
                   </Link>
