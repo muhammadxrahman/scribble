@@ -3,74 +3,97 @@ import * as signalR from '@microsoft/signalr';
 class DocumentHubService {
   private connection: signalR.HubConnection | null = null;
   private documentId: string | null = null;
+  private connectPromise: Promise<void> | null = null;
 
   async connect(token: string): Promise<void> {
-  if (this.connection) {
-    await this.disconnect();
+    // If already connecting, return existing promise
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
+
+    // If already connected, do nothing
+    if (this.connection?.state === signalR.HubConnectionState.Connected) {
+      return;
+    }
+
+    // Create new connection promise
+    this.connectPromise = this._doConnect(token);
+    
+    try {
+      await this.connectPromise;
+    } finally {
+      this.connectPromise = null;
+    }
   }
 
-  this.connection = new signalR.HubConnectionBuilder()
-    .withUrl('http://localhost:5001/hubs/document', {
-      accessTokenFactory: () => token,
-      skipNegotiation: false, // Allow negotiation
-      transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
-    })
-    .configureLogging(signalR.LogLevel.Information)
-    .withAutomaticReconnect()
-    .build();
+  private async _doConnect(token: string): Promise<void> {
+    // Stop existing connection if any
+    if (this.connection) {
+      try {
+        await this.connection.stop();
+      } catch {}
+      this.connection = null;
+    }
 
-  // Add connection handlers
-  this.connection.onclose((error) => {
-    console.log('SignalR connection closed:', error);
-  });
+    this.connection = new signalR.HubConnectionBuilder()
+      .withUrl('http://localhost:5001/hubs/document', {
+        accessTokenFactory: () => token,
+      })
+      .configureLogging(signalR.LogLevel.Warning)
+      .withAutomaticReconnect()
+      .build();
 
-  this.connection.onreconnecting((error) => {
-    console.log('SignalR reconnecting:', error);
-  });
-
-  this.connection.onreconnected((connectionId) => {
-    console.log('SignalR reconnected:', connectionId);
-  });
-
-  await this.connection.start();
-  console.log('SignalR connected successfully');
-}
+    await this.connection.start();
+    console.log('✅ SignalR connected');
+  }
 
   async disconnect(): Promise<void> {
-    if (this.connection) {
-      await this.connection.stop();
-      this.connection = null;
-      this.documentId = null;
-      console.log('SignalR disconnected');
+    const conn = this.connection;
+    this.connection = null;
+    this.documentId = null;
+    
+    if (conn && conn.state !== signalR.HubConnectionState.Disconnected) {
+      try {
+        await conn.stop();
+        console.log('🔌 SignalR disconnected');
+      } catch {}
     }
   }
 
   async joinDocument(documentId: string): Promise<void> {
-    if (!this.connection) {
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
       throw new Error('Not connected to SignalR');
     }
 
     this.documentId = documentId;
     await this.connection.invoke('JoinDocument', documentId);
-    console.log('Joined document:', documentId);
+    console.log('👋 Joined document:', documentId);
   }
 
   async leaveDocument(documentId: string): Promise<void> {
-    if (!this.connection) return;
+    if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
 
-    await this.connection.invoke('LeaveDocument', documentId);
-    this.documentId = null;
-    console.log('Left document:', documentId);
+    try {
+      await this.connection.invoke('LeaveDocument', documentId);
+      this.documentId = null;
+      console.log('👋 Left document:', documentId);
+    } catch {}
   }
 
   async sendContentChange(content: string, cursorPosition: number): Promise<void> {
-    if (!this.connection || !this.documentId) return;
+    if (!this.connection || !this.documentId || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
 
     await this.connection.invoke('SendContentChange', this.documentId, content, cursorPosition);
   }
 
   async sendCursorPosition(position: number): Promise<void> {
-    if (!this.connection || !this.documentId) return;
+    if (!this.connection || !this.documentId || this.connection.state !== signalR.HubConnectionState.Connected) {
+      return;
+    }
 
     await this.connection.invoke('SendCursorPosition', this.documentId, position);
   }
