@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { documentsApi, Document } from '@/lib/api';
-import { documentHubService } from '@/lib/signalr';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import Navbar from '@/components/Navbar';
-import Link from 'next/link';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { documentsApi, Document } from "@/lib/api";
+import { documentHubService } from "@/lib/signalr";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import Navbar from "@/components/Navbar";
+import Link from "next/link";
 
 export default function EditorPage() {
   const params = useParams();
@@ -15,11 +15,11 @@ export default function EditorPage() {
   const signalRConnected = useRef(false);
 
   const [document, setDocument] = useState<Document | null>(null);
-  const [content, setContent] = useState('');
-  const [title, setTitle] = useState('');
+  const [content, setContent] = useState("");
+  const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [characterCount, setCharacterCount] = useState(0);
 
@@ -33,29 +33,29 @@ export default function EditorPage() {
   }, [documentId]);
 
   const loadDocument = async () => {
-    console.log('Attempting to load document:', documentId);
-    console.log('Full URL:', `/Document/${documentId}`);
-    
+    console.log("Attempting to load document:", documentId);
+    console.log("Full URL:", `/Document/${documentId}`);
+
     try {
       const doc = await documentsApi.getById(documentId);
-      console.log('Document loaded successfully:', doc);
+      console.log("Document loaded successfully:", doc);
       setDocument(doc);
       setTitle(doc.title);
-      
+
       // Parse JSON content or use empty string
       try {
         const parsed = JSON.parse(doc.content);
-        setContent(parsed.text || '');
+        setContent(parsed.text || "");
       } catch {
-        setContent('');
+        setContent("");
       }
-      
+
       setCharacterCount(doc.characterCount);
     } catch (err: any) {
-      console.error('Error loading document:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Status:', err.response?.status);
-      setError('Failed to load document');
+      console.error("Error loading document:", err);
+      console.error("Error response:", err.response?.data);
+      console.error("Status:", err.response?.status);
+      setError("Failed to load document");
     } finally {
       setLoading(false);
     }
@@ -66,22 +66,21 @@ export default function EditorPage() {
     // Skip if already connected
     if (signalRConnected.current) return;
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token || !documentId) return;
 
     const connectAndJoin = async () => {
       try {
         signalRConnected.current = true;
-        console.log('🔄 Connecting to SignalR...');
-        
+        console.log("🔄 Connecting to SignalR...");
+
         await documentHubService.connect(token);
-        console.log('✅ Connected');
-        
+        console.log("✅ Connected");
+
         await documentHubService.joinDocument(documentId);
-        console.log('✅ Joined document:', documentId);
-        
+        console.log("✅ Joined document:", documentId);
       } catch (error) {
-        console.error('❌ SignalR error:', error);
+        console.error("❌ SignalR error:", error);
         signalRConnected.current = false;
       }
     };
@@ -96,40 +95,67 @@ export default function EditorPage() {
     };
   }, [documentId]);
 
+  // Listen for real-time changes from other users
+  useEffect(() => {
+    if (!signalRConnected.current) return;
+
+    // When another user changes content
+    documentHubService.onReceiveContentChange((data) => {
+      console.log("📝 Received content change from:", data.displayName);
+      // Update content without triggering save
+      setContent(data.content);
+    });
+
+    // When another user joins
+    documentHubService.onUserJoined((data) => {
+      console.log("👋 User joined:", data.displayName);
+    });
+
+    // When another user leaves
+    documentHubService.onUserLeft((data) => {
+      console.log("👋 User left:", data.displayName);
+    });
+
+    // Cleanup listeners
+    return () => {
+      documentHubService.removeAllListeners();
+    };
+  }, [signalRConnected.current]);
+
   // Auto-save function
   const saveDocument = useCallback(async () => {
     if (!document) return;
-    
+
     setSaving(true);
     try {
       // Store as simple JSON with text field
       const jsonContent = JSON.stringify({ text: content });
-      
+
       await documentsApi.update(documentId, {
         title,
         content: jsonContent,
       });
-      
+
       setLastSaved(new Date());
-      setError('');
+      setError("");
     } catch (err: any) {
       if (err.response?.status === 400) {
-        setError('Character limit exceeded (50,000 max)');
+        setError("Character limit exceeded (50,000 max)");
       } else {
-        setError('Failed to save document');
+        setError("Failed to save document");
       }
     } finally {
       setSaving(false);
     }
   }, [documentId, title, content, document]);
 
-  // Auto-save on content change (debounced)
+  // Auto-save on content change (debounced) - but DON'T auto-save if we just received a change
   useEffect(() => {
     if (!document) return;
-    
+
     const timeoutId = setTimeout(() => {
       saveDocument();
-    }, 2000); // Save 2 seconds after user stops typing
+    }, 5000); // Increased to 5 seconds to reduce conflicts
 
     return () => clearTimeout(timeoutId);
   }, [content, title, saveDocument, document]);
@@ -143,7 +169,11 @@ export default function EditorPage() {
     const newContent = e.target.value;
     if (newContent.length <= maxCharacters) {
       setContent(newContent);
-      setError('');
+      setError("");
+
+      // Send change to other users via SignalR
+      const cursorPosition = e.target.selectionStart;
+      documentHubService.sendContentChange(newContent, cursorPosition);
     } else {
       setError(`Character limit reached (${maxCharacters} max)`);
     }
@@ -199,7 +229,7 @@ export default function EditorPage() {
                   <input
                     type="text"
                     className="form-control"
-                    style={{ width: '300px' }}
+                    style={{ width: "300px" }}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Document title"
@@ -208,16 +238,17 @@ export default function EditorPage() {
 
                 <div className="d-flex align-items-center gap-3">
                   <small className="text-muted">
-                    {characterCount.toLocaleString()} / {maxCharacters.toLocaleString()} characters
+                    {characterCount.toLocaleString()} /{" "}
+                    {maxCharacters.toLocaleString()} characters
                   </small>
-                  
+
                   {saving && (
                     <small className="text-muted">
                       <span className="spinner-border spinner-border-sm me-1" />
                       Saving...
                     </small>
                   )}
-                  
+
                   {!saving && lastSaved && (
                     <small className="text-success">
                       ✓ Saved {lastSaved.toLocaleTimeString()}
@@ -227,9 +258,7 @@ export default function EditorPage() {
               </div>
 
               {error && (
-                <div className="alert alert-danger mt-2 mb-0">
-                  {error}
-                </div>
+                <div className="alert alert-danger mt-2 mb-0">{error}</div>
               )}
             </div>
           </div>
@@ -240,10 +269,10 @@ export default function EditorPage() {
               <textarea
                 className="form-control"
                 style={{
-                  minHeight: '70vh',
-                  fontSize: '16px',
-                  fontFamily: 'monospace',
-                  resize: 'vertical',
+                  minHeight: "70vh",
+                  fontSize: "16px",
+                  fontFamily: "monospace",
+                  resize: "vertical",
                 }}
                 value={content}
                 onChange={handleContentChange}
