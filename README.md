@@ -19,7 +19,7 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - Max 5 documents per user
 - 50,000 character limit per document
 
-### Phase 2 (In Progress)
+### Phase 2 (Completed)
 - Next.js frontend
 - Protected routes
 - Dashboard

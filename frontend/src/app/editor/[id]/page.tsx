@@ -23,6 +23,15 @@ export default function EditorPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [characterCount, setCharacterCount] = useState(0);
 
+  const [activeUsers, setActiveUsers] = useState<
+    Array<{
+      userId: string;
+      displayName: string;
+      username: string;
+      connectionId: string;
+    }>
+  >([]);
+
   const maxCharacters = 50000;
 
   // Load document
@@ -109,11 +118,29 @@ export default function EditorPage() {
     // When another user joins
     documentHubService.onUserJoined((data) => {
       console.log("👋 User joined:", data.displayName);
+      setActiveUsers((prev) => {
+        // Don't add if already in list
+        if (prev.some((u) => u.connectionId === data.connectionId)) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            userId: data.userId,
+            displayName: data.displayName,
+            username: data.username || data.displayName,
+            connectionId: data.connectionId,
+          },
+        ];
+      });
     });
 
     // When another user leaves
     documentHubService.onUserLeft((data) => {
       console.log("👋 User left:", data.displayName);
+      setActiveUsers((prev) =>
+        prev.filter((u) => u.connectionId !== data.connectionId)
+      );
     });
 
     // Cleanup listeners
@@ -237,13 +264,31 @@ export default function EditorPage() {
                 </div>
 
                 <div className="d-flex align-items-center gap-3">
-                  <small className="text-muted">
+                  <small className="text-white">
                     {characterCount.toLocaleString()} /{" "}
                     {maxCharacters.toLocaleString()} characters
                   </small>
 
+                  {/* User Presence Indicators */}
+                  {activeUsers.length > 0 && (
+                    <div className="d-flex align-items-center gap-2">
+                      <small className="text-muted">•</small>
+                      {activeUsers.map((user) => (
+                        <div
+                          key={user.connectionId}
+                          className="badge bg-secondary"
+                          title={`@${user.username}`}
+                          style={{ cursor: "pointer" }}
+                        >
+                          {user.displayName}
+                        </div>
+                      ))}
+                      <small className="text-muted">viewing</small>
+                    </div>
+                  )}
+
                   {saving && (
-                    <small className="text-muted">
+                    <small className="text-white">
                       <span className="spinner-border spinner-border-sm me-1" />
                       Saving...
                     </small>
