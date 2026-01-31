@@ -130,6 +130,15 @@ export const documentsApi = {
     const response = await api.get("/Document/shared");
     return response.data;
   },
+
+  getPermission: async (id: string): Promise<{ permission: string | null }> => {
+    try {
+      const response = await api.get(`/Document/${id}/permission`);
+      return response.data;
+    } catch {
+      return { permission: null };
+    }
+  },
 };
 
 export default api;

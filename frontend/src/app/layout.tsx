@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./globals.css";
+import "./prosemirror.css";
 
 export const metadata: Metadata = {
   title: "Scribble - Collaborative Document Editor",

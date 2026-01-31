@@ -7,6 +7,17 @@ import { documentHubService } from "@/lib/signalr";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import type { ProseMirrorEditorRef } from "@/components/ProseMirrorEditor";
+
+// Dynamic import to avoid SSR issues with ProseMirror
+const ProseMirrorEditor = dynamic(
+  () => import("@/components/ProseMirrorEditor"),
+  {
+    ssr: false,
+    loading: () => <div className="text-center py-5">Loading editor...</div>,
+  },
+);
 
 export default function EditorPage() {
   const params = useParams();
@@ -14,6 +25,9 @@ export default function EditorPage() {
   const documentId = params.id as string;
   const signalRConnected = useRef(false);
 
+  const editorRef = useRef<ProseMirrorEditorRef>(null);
+
+  const [isOwner, setIsOwner] = useState(false);
   const [document, setDocument] = useState<Document | null>(null);
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
@@ -29,6 +43,7 @@ export default function EditorPage() {
   const [shareError, setShareError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
 
+  const [hasEditPermission, setHasEditPermission] = useState(true);
   const [sharedUsers, setSharedUsers] = useState<
     Array<{
       userId: string;
@@ -59,13 +74,26 @@ export default function EditorPage() {
 
   const loadDocument = async () => {
     console.log("Attempting to load document:", documentId);
-    console.log("Full URL:", `/Document/${documentId}`);
 
     try {
-      const doc = await documentsApi.getById(documentId);
+      const [doc, permissionData] = await Promise.all([
+        documentsApi.getById(documentId),
+        documentsApi.getPermission(documentId),
+      ]);
       console.log("Document loaded successfully:", doc);
+      console.log("User permission:", permissionData.permission);
       setDocument(doc);
       setTitle(doc.title);
+
+      // Check if current user is owner
+      const userIsOwner = permissionData.permission === "Owner";
+      setIsOwner(userIsOwner);
+
+      // Set edit permission based on Owner or Edit permission
+      const canEdit =
+        permissionData.permission === "Owner" ||
+        permissionData.permission === "Edit";
+      setHasEditPermission(canEdit);
 
       // Parse JSON content or use empty string
       try {
@@ -124,16 +152,22 @@ export default function EditorPage() {
   useEffect(() => {
     if (!signalRConnected.current) return;
 
+    const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserId = currentUser.userId;
+
     // When another user changes content
     documentHubService.onReceiveContentChange((data) => {
       console.log("📝 Received content change from:", data.displayName);
       // Update content without triggering save
       setContent(data.content);
+      // Update ProseMirror editor
+      editorRef.current?.updateContent(data.content);
     });
 
     // When another user joins
     documentHubService.onUserJoined((data) => {
       console.log("👋 User joined:", data.displayName);
+      if (data.userId === currentUserId) return;
       setActiveUsers((prev) => {
         // Don't add if already in list
         if (prev.some((u) => u.connectionId === data.connectionId)) {
@@ -156,6 +190,21 @@ export default function EditorPage() {
       console.log("👋 User left:", data.displayName);
       setActiveUsers((prev) =>
         prev.filter((u) => u.connectionId !== data.connectionId),
+      );
+    });
+
+    // Get current users already in the document (when you first join)
+    documentHubService.onCurrentUsers((users) => {
+      console.log("📋 Current users:", users);
+      // Filter out yourself
+      const otherUsers = users.filter((u: any) => u.userId !== currentUserId);
+      setActiveUsers(
+        otherUsers.map((u: any) => ({
+          userId: u.userId,
+          displayName: u.displayName,
+          username: u.username || u.displayName,
+          connectionId: u.connectionId,
+        })),
       );
     });
 
@@ -328,6 +377,10 @@ export default function EditorPage() {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Document title"
+                    disabled={!isOwner}
+                    title={
+                      !isOwner ? "Only the owner can change the title" : ""
+                    }
                   />
                 </div>
 
@@ -379,108 +432,18 @@ export default function EditorPage() {
           {/* Editor Area */}
           <div className="row">
             <div className="col-12">
-              <textarea
-                className="form-control"
-                style={{
-                  minHeight: "70vh",
-                  fontSize: "16px",
-                  fontFamily: "monospace",
-                  resize: "vertical",
+              <ProseMirrorEditor
+                ref={editorRef}
+                content={content}
+                onChange={(newContent) => {
+                  setContent(newContent);
+                  // Send to SignalR for real-time sync
+                  documentHubService.sendContentChange(newContent, 0);
                 }}
-                value={content}
-                onChange={handleContentChange}
-                placeholder="Start writing..."
+                readOnly={!hasEditPermission}
               />
             </div>
           </div>
-
-          {/* Share Modal */}
-          {/* {showShareModal && (
-            <>
-              <div className="modal show d-block" tabIndex={-1}>
-                <div className="modal-dialog">
-                  <div className="modal-content">
-                    <div className="modal-header">
-                      <h5 className="modal-title">Share Document</h5>
-                      <button
-                        type="button"
-                        className="btn-close"
-                        onClick={() => {
-                          setShowShareModal(false);
-                          setShareError("");
-                          setShareUsername("");
-                        }}
-                      ></button>
-                    </div>
-                    <form onSubmit={handleShare}>
-                      <div className="modal-body">
-                        {shareError && (
-                          <div className="alert alert-danger" role="alert">
-                            {shareError}
-                          </div>
-                        )}
-
-                        <div className="mb-3">
-                          <label htmlFor="shareUsername" className="form-label">
-                            Username
-                          </label>
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="shareUsername"
-                            value={shareUsername}
-                            onChange={(e) => setShareUsername(e.target.value)}
-                            placeholder="Enter username to share with"
-                            required
-                            autoFocus
-                          />
-                        </div>
-
-                        <div className="mb-3">
-                          <label
-                            htmlFor="sharePermission"
-                            className="form-label"
-                          >
-                            Permission
-                          </label>
-                          <select
-                            className="form-select"
-                            id="sharePermission"
-                            value={sharePermission}
-                            onChange={(e) => setSharePermission(e.target.value)}
-                          >
-                            <option value="Read">Read Only</option>
-                            <option value="Edit">Can Edit</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="modal-footer">
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          onClick={() => {
-                            setShowShareModal(false);
-                            setShareError("");
-                            setShareUsername("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="btn btn-primary"
-                          disabled={shareLoading}
-                        >
-                          {shareLoading ? "Sharing..." : "Share"}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-backdrop show"></div>
-            </>
-          )} */}
 
           {showShareModal && (
             <>

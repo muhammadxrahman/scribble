@@ -160,4 +160,35 @@ public class DocumentController : ControllerBase
         }));
     }
 
+    [HttpGet("{id:guid}/permission")]
+    public async Task<IActionResult> GetUserPermission(Guid id)
+    {
+        var userId = GetCurrentUserId();
+
+        // Check if owner - use the document service
+        var document = await _documentService.GetDocumentByIdAsync(id, userId);
+
+        if (document == null)
+        {
+            return Ok(new { permission = (string?)null });
+        }
+
+        // If we got the document, check if owner
+        if (document.OwnerId == userId)
+        {
+            return Ok(new { permission = "Owner" });
+        }
+
+        // Must be shared - get the share to check permission
+        var shares = await _documentService.GetDocumentSharesAsync(id, document.OwnerId);
+        var userShare = shares.FirstOrDefault(s => s.UserId == userId);
+
+        if (userShare != null)
+        {
+            return Ok(new { permission = userShare.Permission.ToString() });
+        }
+
+        return Ok(new { permission = (string?)null });
+    }
+
 }
