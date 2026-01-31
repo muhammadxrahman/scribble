@@ -11,4 +11,5 @@ public class DocumentResponse
     public required string OwnerDisplayName { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public int ShareCount { get; set; } = 0;
 }

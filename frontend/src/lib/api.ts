@@ -49,6 +49,7 @@ export interface Document {
   ownerDisplayName: string;
   createdAt: string;
   updatedAt: string;
+  shareCount?: number;
 }
 
 export interface CreateDocumentRequest {

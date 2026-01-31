@@ -145,12 +145,12 @@ export default function DashboardPage() {
                     <div className="card-body">
                       <div className="d-flex justify-content-between align-items-start">
                         <h5 className="card-title">{doc.title}</h5>
-                        {activeTab === "my" && (
+                        {activeTab === "my" && (doc.shareCount ?? 0) > 0 && (
                           <span
                             className="badge bg-info text-dark"
-                            title="Shared with others"
+                            title={`Shared with ${doc.shareCount} ${doc.shareCount === 1 ? "person" : "people"}`}
                           >
-                            👥
+                            👥 {doc.shareCount}
                           </span>
                         )}
                       </div>

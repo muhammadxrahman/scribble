@@ -48,20 +48,22 @@ public class DocumentService
             .Where(d => d.OwnerId == userId)
             .Include(d => d.Owner)
             .OrderByDescending(d => d.UpdatedAt)
-            .ToListAsync();
+            .Select(d => new DocumentResponse
+            {
+                Id = d.Id,
+                Title = d.Title,
+                Content = d.Content,
+                CharacterCount = d.CharacterCount,
+                OwnerId = d.OwnerId,
+                OwnerUsername = d.Owner.Username,
+                OwnerDisplayName = d.Owner.DisplayName,
+                CreatedAt = d.CreatedAt,
+                UpdatedAt = d.UpdatedAt,
+                ShareCount = _context.DocumentShares.Count(s => s.DocumentId == d.Id)
+            })
+        .ToListAsync();
 
-        return documents.Select(d => new DocumentResponse
-        {
-            Id = d.Id,
-            Title = d.Title,
-            Content = d.Content,
-            CharacterCount = d.CharacterCount,
-            OwnerId = d.OwnerId,
-            OwnerUsername = d.Owner.Username,
-            OwnerDisplayName = d.Owner.DisplayName,
-            CreatedAt = d.CreatedAt,
-            UpdatedAt = d.UpdatedAt
-        }).ToList();
+        return documents;
     }
 
 
