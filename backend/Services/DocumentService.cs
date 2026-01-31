@@ -117,7 +117,7 @@ public class DocumentService
         {
             // Count characters (strip JSON formatting)
             var characterCount = CountPlainTextCharacters(request.Content);
-            
+
             if (characterCount > MaxCharacterCount)
             {
                 return null; // Character limit exceeded
@@ -181,6 +181,121 @@ public class DocumentService
     {
         // simple char count until JSON parsing is implemented
         return content.Length;
+    }
+
+    public async Task<DocumentShare?> ShareDocumentAsync(Guid documentId, Guid ownerId, string username, string permission)
+    {
+        // Check if document exists and user is owner
+        var document = await _context.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId && d.OwnerId == ownerId);
+
+        if (document == null)
+        {
+            return null;
+        }
+
+        // Find user by username
+        var userToShareWith = await _context.Users
+            .FirstOrDefaultAsync(u => u.Username == username);
+
+        if (userToShareWith == null)
+        {
+            return null;
+        }
+
+        // Don't allow sharing with yourself
+        if (userToShareWith.Id == ownerId)
+        {
+            return null;
+        }
+
+        // Parse permission
+        if (!Enum.TryParse<Permission>(permission, out var permissionEnum))
+        {
+            return null;
+        }
+
+        // Check if already shared
+        var existingShare = await _context.DocumentShares
+            .FirstOrDefaultAsync(s => s.DocumentId == documentId && s.UserId == userToShareWith.Id);
+
+        if (existingShare != null)
+        {
+            // Update existing permission
+            existingShare.Permission = permissionEnum;
+            await _context.SaveChangesAsync();
+            return existingShare;
+        }
+
+        // Create new share
+        var share = new DocumentShare
+        {
+            DocumentId = documentId,
+            UserId = userToShareWith.Id,
+            Permission = permissionEnum,
+            SharedAt = DateTime.UtcNow
+        };
+
+        _context.DocumentShares.Add(share);
+        await _context.SaveChangesAsync();
+
+        return share;
+    }
+
+    public async Task<List<DocumentShare>> GetDocumentSharesAsync(Guid documentId, Guid ownerId)
+    {
+        // Check if user is owner
+        var document = await _context.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId && d.OwnerId == ownerId);
+
+        if (document == null)
+        {
+            return new List<DocumentShare>();
+        }
+
+        return await _context.DocumentShares
+            .Where(s => s.DocumentId == documentId)
+            .Include(s => s.User)
+            .ToListAsync();
+    }
+
+    public async Task<bool> RemoveShareAsync(Guid documentId, Guid ownerId, Guid userId)
+    {
+        // Check if user is owner
+        var document = await _context.Documents
+            .FirstOrDefaultAsync(d => d.Id == documentId && d.OwnerId == ownerId);
+
+        if (document == null)
+        {
+            return false;
+        }
+
+        var share = await _context.DocumentShares
+            .FirstOrDefaultAsync(s => s.DocumentId == documentId && s.UserId == userId);
+
+        if (share == null)
+        {
+            return false;
+        }
+
+        _context.DocumentShares.Remove(share);
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<List<Document>> GetSharedDocumentsAsync(Guid userId)
+    {
+        var sharedDocumentIds = await _context.DocumentShares
+            .Where(s => s.UserId == userId)
+            .Select(s => s.DocumentId)
+            .ToListAsync();
+
+        return await _context.Documents
+            .Where(d => sharedDocumentIds.Contains(d.Id))
+            .Include(d => d.Owner)
+            .OrderByDescending(d => d.UpdatedAt)
+            .ToListAsync();
     }
 
 }

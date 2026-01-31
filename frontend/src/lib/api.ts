@@ -79,6 +79,7 @@ export const authApi = {
 
 // Documents API
 export const documentsApi = {
+  // core docs
   getAll: async (): Promise<Document[]> => {
     const response = await api.get("/Document");
     return response.data;
@@ -104,6 +105,29 @@ export const documentsApi = {
 
   delete: async (id: string): Promise<void> => {
     await api.delete(`/Document/${id}`);
+  },
+
+  // shares
+  shareDocument: async (
+    id: string,
+    username: string,
+    permission: string
+  ): Promise<void> => {
+    await api.post(`/Document/${id}/share`, { username, permission });
+  },
+
+  getShares: async (id: string): Promise<any[]> => {
+    const response = await api.get(`/Document/${id}/shares`);
+    return response.data;
+  },
+
+  removeShare: async (id: string, userId: string): Promise<void> => {
+    await api.delete(`/Document/${id}/shares/${userId}`);
+  },
+
+  getSharedDocuments: async (): Promise<Document[]> => {
+    const response = await api.get("/Document/shared");
+    return response.data;
   },
 };
 

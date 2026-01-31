@@ -88,4 +88,76 @@ public class DocumentController : ControllerBase
 
         return NoContent();
     }
+
+
+    // sharing
+    [HttpPost("{id:guid}/share")]
+    public async Task<IActionResult> ShareDocument(Guid id, [FromBody] ShareDocumentRequest request)
+    {
+        var userId = GetCurrentUserId();
+
+        var share = await _documentService.ShareDocumentAsync(id, userId, request.Username, request.Permission);
+
+        if (share == null)
+        {
+            return BadRequest(new { message = "Failed to share document. User not found or you don't own this document." });
+        }
+
+        return Ok(new { message = "Document shared successfully" });
+    }
+
+    [HttpGet("{id:guid}/shares")]
+    public async Task<IActionResult> GetDocumentShares(Guid id)
+    {
+        var userId = GetCurrentUserId();
+
+        var shares = await _documentService.GetDocumentSharesAsync(id, userId);
+
+        return Ok(shares.Select(s => new
+        {
+            userId = s.UserId,
+            username = s.User.Username,
+            email = s.User.Email,
+            displayName = s.User.DisplayName,
+            permission = s.Permission.ToString(),
+            sharedAt = s.SharedAt
+        }));
+    }
+
+    [HttpDelete("{id:guid}/shares/{userId:guid}")]
+    public async Task<IActionResult> RemoveShare(Guid id, Guid userId)
+    {
+        var currentUserId = GetCurrentUserId();
+
+        var success = await _documentService.RemoveShareAsync(id, currentUserId, userId);
+
+        if (!success)
+        {
+            return NotFound(new { message = "Share not found or you don't own this document" });
+        }
+
+        return NoContent();
+    }
+
+    [HttpGet("shared")]
+    public async Task<IActionResult> GetSharedDocuments()
+    {
+        var userId = GetCurrentUserId();
+
+        var documents = await _documentService.GetSharedDocumentsAsync(userId);
+
+        return Ok(documents.Select(d => new DocumentResponse
+        {
+            Id = d.Id,
+            Title = d.Title,
+            Content = d.Content,
+            CharacterCount = d.CharacterCount,
+            OwnerId = d.OwnerId,
+            OwnerUsername = d.Owner.Username,
+            OwnerDisplayName = d.Owner.DisplayName,
+            CreatedAt = d.CreatedAt,
+            UpdatedAt = d.UpdatedAt
+        }));
+    }
+
 }
