@@ -16,14 +16,21 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const { user } = useAuth();
 
+  const [sharedDocuments, setSharedDocuments] = useState<Document[]>([]);
+  const [activeTab, setActiveTab] = useState<"my" | "shared">("my");
+
   useEffect(() => {
     fetchDocuments();
   }, []);
 
   const fetchDocuments = async () => {
     try {
-      const data = await documentsApi.getAll();
-      setDocuments(data);
+      const [myDocs, sharedDocs] = await Promise.all([
+        documentsApi.getAll(),
+        documentsApi.getSharedDocuments(),
+      ]);
+      setDocuments(myDocs);
+      setSharedDocuments(sharedDocs);
     } catch (err: any) {
       setError("Failed to load documents");
     } finally {
@@ -68,7 +75,26 @@ export default function DashboardPage() {
 
         <div className="container mt-4">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>My Documents</h1>
+            <div>
+              <ul className="nav nav-tabs">
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === "my" ? "active" : ""}`}
+                    onClick={() => setActiveTab("my")}
+                  >
+                    My Documents ({documents.length})
+                  </button>
+                </li>
+                <li className="nav-item">
+                  <button
+                    className={`nav-link ${activeTab === "shared" ? "active" : ""}`}
+                    onClick={() => setActiveTab("shared")}
+                  >
+                    Shared with Me ({sharedDocuments.length})
+                  </button>
+                </li>
+              </ul>
+            </div>
             <button
               className="btn btn-primary"
               onClick={() => setShowCreateModal(true)}
@@ -97,20 +123,32 @@ export default function DashboardPage() {
                 <span className="visually-hidden">Loading...</span>
               </div>
             </div>
-          ) : documents.length === 0 ? (
+          ) : activeTab === "my" && documents.length === 0 ? (
             <div className="text-center py-5">
               <h3 className="text-muted">No documents yet</h3>
               <p className="text-muted">
                 Create your first document to get started!
               </p>
             </div>
+          ) : activeTab === "shared" && sharedDocuments.length === 0 ? (
+            <div className="text-center py-5">
+              <h3 className="text-muted">No shared documents</h3>
+              <p className="text-muted">
+                Documents shared with you will appear here.
+              </p>
+            </div>
           ) : (
             <div className="row">
-              {documents.map((doc) => (
+              {(activeTab === "my" ? documents : sharedDocuments).map((doc) => (
                 <div key={doc.id} className="col-md-4 mb-3">
                   <div className="card h-100">
                     <div className="card-body">
                       <h5 className="card-title">{doc.title}</h5>
+                      {activeTab === "shared" && (
+                        <p className="card-text text-muted small">
+                          Owner: {doc.ownerDisplayName}
+                        </p>
+                      )}
                       <p className="card-text text-muted small">
                         {doc.characterCount} characters
                       </p>
@@ -126,12 +164,14 @@ export default function DashboardPage() {
                       >
                         Open
                       </Link>
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDeleteDocument(doc.id)}
-                      >
-                        Delete
-                      </button>
+                      {activeTab === "my" && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

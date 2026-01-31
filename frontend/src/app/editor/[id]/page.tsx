@@ -23,6 +23,12 @@ export default function EditorPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [characterCount, setCharacterCount] = useState(0);
 
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUsername, setShareUsername] = useState("");
+  const [sharePermission, setSharePermission] = useState("Edit");
+  const [shareError, setShareError] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
+
   const [activeUsers, setActiveUsers] = useState<
     Array<{
       userId: string;
@@ -139,7 +145,7 @@ export default function EditorPage() {
     documentHubService.onUserLeft((data) => {
       console.log("👋 User left:", data.displayName);
       setActiveUsers((prev) =>
-        prev.filter((u) => u.connectionId !== data.connectionId)
+        prev.filter((u) => u.connectionId !== data.connectionId),
       );
     });
 
@@ -206,6 +212,27 @@ export default function EditorPage() {
     }
   };
 
+  const handleShare = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setShareError("");
+    setShareLoading(true);
+
+    try {
+      await documentsApi.shareDocument(
+        documentId,
+        shareUsername,
+        sharePermission,
+      );
+      setShareUsername("");
+      setShowShareModal(false);
+      alert("Document shared successfully!");
+    } catch (err: any) {
+      setShareError(err.response?.data?.message || "Failed to share document");
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -253,6 +280,12 @@ export default function EditorPage() {
                   <Link href="/dashboard" className="btn btn-outline-secondary">
                     ← Back
                   </Link>
+                  <button
+                    className="btn btn-outline-primary"
+                    onClick={() => setShowShareModal(true)}
+                  >
+                    👥 Share
+                  </button>
                   <input
                     type="text"
                     className="form-control"
@@ -325,6 +358,94 @@ export default function EditorPage() {
               />
             </div>
           </div>
+
+          {/* Share Modal */}
+          {showShareModal && (
+            <>
+              <div className="modal show d-block" tabIndex={-1}>
+                <div className="modal-dialog">
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h5 className="modal-title">Share Document</h5>
+                      <button
+                        type="button"
+                        className="btn-close"
+                        onClick={() => {
+                          setShowShareModal(false);
+                          setShareError("");
+                          setShareUsername("");
+                        }}
+                      ></button>
+                    </div>
+                    <form onSubmit={handleShare}>
+                      <div className="modal-body">
+                        {shareError && (
+                          <div className="alert alert-danger" role="alert">
+                            {shareError}
+                          </div>
+                        )}
+
+                        <div className="mb-3">
+                          <label htmlFor="shareUsername" className="form-label">
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            id="shareUsername"
+                            value={shareUsername}
+                            onChange={(e) => setShareUsername(e.target.value)}
+                            placeholder="Enter username to share with"
+                            required
+                            autoFocus
+                          />
+                        </div>
+
+                        <div className="mb-3">
+                          <label
+                            htmlFor="sharePermission"
+                            className="form-label"
+                          >
+                            Permission
+                          </label>
+                          <select
+                            className="form-select"
+                            id="sharePermission"
+                            value={sharePermission}
+                            onChange={(e) => setSharePermission(e.target.value)}
+                          >
+                            <option value="Read">Read Only</option>
+                            <option value="Edit">Can Edit</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => {
+                            setShowShareModal(false);
+                            setShareError("");
+                            setShareUsername("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={shareLoading}
+                        >
+                          {shareLoading ? "Sharing..." : "Share"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-backdrop show"></div>
+            </>
+          )}
         </div>
       </>
     </ProtectedRoute>

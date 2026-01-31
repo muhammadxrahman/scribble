@@ -76,9 +76,13 @@ public class DocumentService
             return null;
         }
 
-        if (document.OwnerId != userId)
+        // user is owner OR has shared access
+        var isOwner = document.OwnerId == userId;
+        var hasSharedAccess = await _context.DocumentShares
+            .AnyAsync(s => s.DocumentId == documentId && s.UserId == userId);
+
+        if (!isOwner && !hasSharedAccess)
         {
-            // temp until sharing
             return null;
         }
 
@@ -101,7 +105,16 @@ public class DocumentService
     {
         var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
 
-        if (document == null || document.OwnerId != userId)
+        if (document == null)
+        {
+            return null;
+        }
+
+        var isOwner = document.OwnerId == userId;
+        var hasEditAccess = await _context.DocumentShares
+            .AnyAsync(s => s.DocumentId == documentId && s.UserId == userId && s.Permission == Permission.Edit);
+
+        if (!isOwner && !hasEditAccess)
         {
             return null;
         }

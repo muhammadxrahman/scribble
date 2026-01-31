@@ -4,8 +4,8 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 
 ## Tech Stack
 
-- **Backend**: ASP.NET Core 8 (Minimal APIs)
-- **Frontend**: Next.js 14 with TypeScript
+- **Backend**: ASP.NET Core 8
+- **Frontend**: Next.js 16 with TypeScript
 - **Database**: PostgreSQL 16
 - **Authentication**: JWT
 - **Real-time**: SignalR
@@ -13,10 +13,9 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 ## Features
 
 ### Phase 1 (Completed)
-- User authentication (register/login)
-- Document CRUD operations
 - JWT authentication
 - Token blacklisting
+- Document CRUD operations
 - Max 5 documents per user
 - 50,000 character limit per document
 
@@ -35,14 +34,15 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - Live cursors and presence
 
 ### Phase 4 (Planned)
-- Version history
-- Revert to previous versions
-
-### Phase 5 (Planned)
 - Python AI microservice
+- Document owner exclusivity
 - Text summarization
 - Grammar checking
 - Content revision
+
+### Phase 4.1 (Stretch)
+- Owner maintained version history
+- Revert to previous versions
 
 ## Getting Started
 
