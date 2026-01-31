@@ -16,6 +16,7 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - User authentication (register/login)
 - Document CRUD operations
 - JWT authentication
+- Token blacklisting
 - Max 5 documents per user
 - 50,000 character limit per document
 
@@ -26,7 +27,7 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - Document editor with auto-save
 - Real-time character counting
 
-### Phase 3 (Planned)
+### Phase 3 (In progress)
 - Document sharing with permissions
 - Read/Edit access control
 - Real-time collaboration with SignalR
@@ -132,6 +133,7 @@ Scribble/
 │   └── src/
 │       ├── app/         # Pages (App Router)
 │       ├── components/  # React components
+│       ├── context/     # Auth context
 │       └── lib/         # Utilities
 ├── docker-compose.yml   # Docker orchestration
 └── .env                 # Environment variables (not in git)
