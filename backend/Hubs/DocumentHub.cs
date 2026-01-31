@@ -106,12 +106,17 @@ public class DocumentHub : Hub
         
         // Send current users to the caller
         var currentUsers = new List<object>();
+        var seenUserIds = new HashSet<Guid>();
         if (DocumentUsers.ContainsKey(documentId))
         {
             foreach (var connId in DocumentUsers[documentId])
             {
                 if (connId != connectionId && ConnectionToUser.TryGetValue(connId, out var otherUserId))
                 {
+                    // Only add if we haven't seen this user yet
+                if (!seenUserIds.Contains(otherUserId))
+                {
+                    seenUserIds.Add(otherUserId);
                     var otherUser = await _context.Users.FindAsync(otherUserId);
                     if (otherUser != null)
                     {
@@ -120,9 +125,10 @@ public class DocumentHub : Hub
                             userId = otherUserId,
                             displayName = otherUser.DisplayName,
                             username = otherUser.Username,
-                            connectionId = connId
+                            connectionId = connId // Use first connection we find for this user
                         });
                     }
+                }
                 }
             }
         }
