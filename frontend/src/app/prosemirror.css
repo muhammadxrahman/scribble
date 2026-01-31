@@ -244,3 +244,29 @@
   background: #dee2e6;
   margin: 0 4px;
 }
+
+/* Underline and Strikethrough */
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror s,
+.ProseMirror strike {
+  text-decoration: line-through;
+}
+
+.toolbar-btn.underline {
+  text-decoration: underline;
+}
+
+.toolbar-btn.strikethrough {
+  text-decoration: line-through;
+}
+
+/* H3 styles */
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 0.5em 0;
+  line-height: 1.4;
+}
