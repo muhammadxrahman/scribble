@@ -143,7 +143,17 @@ export default function DashboardPage() {
                 <div key={doc.id} className="col-md-4 mb-3">
                   <div className="card h-100">
                     <div className="card-body">
-                      <h5 className="card-title">{doc.title}</h5>
+                      <div className="d-flex justify-content-between align-items-start">
+                        <h5 className="card-title">{doc.title}</h5>
+                        {activeTab === "my" && (
+                          <span
+                            className="badge bg-info text-dark"
+                            title="Shared with others"
+                          >
+                            👥
+                          </span>
+                        )}
+                      </div>
                       {activeTab === "shared" && (
                         <p className="card-text text-muted small">
                           Owner: {doc.ownerDisplayName}

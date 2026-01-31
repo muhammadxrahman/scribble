@@ -29,6 +29,16 @@ export default function EditorPage() {
   const [shareError, setShareError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
 
+  const [sharedUsers, setSharedUsers] = useState<
+    Array<{
+      userId: string;
+      username: string;
+      displayName: string;
+      email: string;
+      permission: string;
+      sharedAt: string;
+    }>
+  >([]);
   const [activeUsers, setActiveUsers] = useState<
     Array<{
       userId: string;
@@ -224,12 +234,34 @@ export default function EditorPage() {
         sharePermission,
       );
       setShareUsername("");
-      setShowShareModal(false);
-      alert("Document shared successfully!");
+      await fetchSharedUsers(); // refresh list
+      setShareError("");
     } catch (err: any) {
       setShareError(err.response?.data?.message || "Failed to share document");
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  const fetchSharedUsers = async () => {
+    try {
+      const users = await documentsApi.getShares(documentId);
+      setSharedUsers(users);
+    } catch (err) {
+      console.error("Failed to fetch shared users:", err);
+    }
+  };
+
+  const handleRemoveShare = async (userId: string) => {
+    if (!confirm("Remove access for this user?")) {
+      return;
+    }
+
+    try {
+      await documentsApi.removeShare(documentId, userId);
+      await fetchSharedUsers(); // Refresh the list
+    } catch (err) {
+      setShareError("Failed to remove access");
     }
   };
 
@@ -282,7 +314,10 @@ export default function EditorPage() {
                   </Link>
                   <button
                     className="btn btn-outline-primary"
-                    onClick={() => setShowShareModal(true)}
+                    onClick={() => {
+                      setShowShareModal(true);
+                      fetchSharedUsers();
+                    }}
                   >
                     👥 Share
                   </button>
@@ -360,7 +395,7 @@ export default function EditorPage() {
           </div>
 
           {/* Share Modal */}
-          {showShareModal && (
+          {/* {showShareModal && (
             <>
               <div className="modal show d-block" tabIndex={-1}>
                 <div className="modal-dialog">
@@ -440,6 +475,152 @@ export default function EditorPage() {
                         </button>
                       </div>
                     </form>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-backdrop show"></div>
+            </>
+          )} */}
+
+          {showShareModal && (
+            <>
+              <div className="modal show d-block" tabIndex={-1}>
+                <div className="modal-dialog modal-lg">
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h5 className="modal-title">Share Document</h5>
+                      <button
+                        type="button"
+                        className="btn-close"
+                        onClick={() => {
+                          setShowShareModal(false);
+                          setShareError("");
+                          setShareUsername("");
+                        }}
+                      ></button>
+                    </div>
+                    <div className="modal-body">
+                      {/* Share Form */}
+                      <form onSubmit={handleShare} className="mb-4">
+                        {shareError && (
+                          <div className="alert alert-danger" role="alert">
+                            {shareError}
+                          </div>
+                        )}
+
+                        <div className="row">
+                          <div className="col-md-6 mb-3">
+                            <label
+                              htmlFor="shareUsername"
+                              className="form-label"
+                            >
+                              Username
+                            </label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              id="shareUsername"
+                              value={shareUsername}
+                              onChange={(e) => setShareUsername(e.target.value)}
+                              placeholder="Enter username"
+                              required
+                            />
+                          </div>
+
+                          <div className="col-md-4 mb-3">
+                            <label
+                              htmlFor="sharePermission"
+                              className="form-label"
+                            >
+                              Permission
+                            </label>
+                            <select
+                              className="form-select"
+                              id="sharePermission"
+                              value={sharePermission}
+                              onChange={(e) =>
+                                setSharePermission(e.target.value)
+                              }
+                            >
+                              <option value="Read">Read Only</option>
+                              <option value="Edit">Can Edit</option>
+                            </select>
+                          </div>
+
+                          <div className="col-md-2 mb-3">
+                            <label className="form-label">&nbsp;</label>
+                            <button
+                              type="submit"
+                              className="btn btn-primary w-100"
+                              disabled={shareLoading}
+                            >
+                              {shareLoading ? "Adding..." : "Add"}
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+
+                      <hr />
+
+                      {/* List of Shared Users */}
+                      <div>
+                        <h6 className="mb-3">People with access</h6>
+
+                        {sharedUsers.length === 0 ? (
+                          <p className="text-muted small">
+                            Not shared with anyone yet
+                          </p>
+                        ) : (
+                          <div className="list-group">
+                            {sharedUsers.map((user) => (
+                              <div
+                                key={user.userId}
+                                className="list-group-item d-flex justify-content-between align-items-center"
+                              >
+                                <div>
+                                  <div className="fw-bold">
+                                    {user.displayName}
+                                  </div>
+                                  <div className="text-muted small">
+                                    @{user.username}
+                                  </div>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                  <span
+                                    className={`badge ${user.permission === "Edit" ? "bg-success" : "bg-secondary"}`}
+                                  >
+                                    {user.permission === "Edit"
+                                      ? "Can Edit"
+                                      : "Read Only"}
+                                  </span>
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() =>
+                                      handleRemoveShare(user.userId)
+                                    }
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="modal-footer">
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setShowShareModal(false);
+                          setShareError("");
+                          setShareUsername("");
+                        }}
+                      >
+                        Done
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
