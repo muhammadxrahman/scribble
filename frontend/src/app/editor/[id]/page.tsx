@@ -28,6 +28,7 @@ export default function EditorPage() {
   const signalRConnected = useRef(false);
 
   const editorRef = useRef<ProseMirrorEditorRef>(null);
+  const contentSyncTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const [remoteCursors, setRemoteCursors] = useState<{
     [userId: string]: {
@@ -97,7 +98,6 @@ export default function EditorPage() {
   }, [documentId]);
 
   const loadDocument = async () => {
-
     try {
       const [doc, permissionData] = await Promise.all([
         documentsApi.getById(documentId),
@@ -149,7 +149,6 @@ export default function EditorPage() {
 
         await documentHubService.connect(token);
         await documentHubService.joinDocument(documentId);
-
       } catch (error) {
         signalRConnected.current = false;
       }
@@ -159,6 +158,10 @@ export default function EditorPage() {
 
     // Cleanup
     return () => {
+      // Clear any pending content sync
+      if (contentSyncTimeoutRef.current) {
+        clearTimeout(contentSyncTimeoutRef.current);
+      }
       signalRConnected.current = false;
       documentHubService.leaveDocument(documentId).catch(() => {});
       documentHubService.disconnect().catch(() => {});
@@ -470,8 +473,14 @@ export default function EditorPage() {
                   content={content}
                   onChange={(newContent) => {
                     setContent(newContent);
-                    // Send to SignalR for real-time sync
-                    documentHubService.sendContentChange(newContent, 0);
+                    // Debounce SignalR sync - only send after 500ms of no typing
+                    if (contentSyncTimeoutRef.current) {
+                      clearTimeout(contentSyncTimeoutRef.current);
+                    }
+
+                    contentSyncTimeoutRef.current = setTimeout(() => {
+                      documentHubService.sendContentChange(newContent, 0);
+                    }, 500);
                   }}
                   onCursorChange={handleCursorChange}
                   readOnly={!hasEditPermission}
