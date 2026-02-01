@@ -18,6 +18,9 @@ export default function Navbar() {
             <>
               <span className="text-white me-3">
                 Welcome, {user.displayName}
+                <span style={{ opacity: 0.7, fontSize: "0.9em" }}>
+                  (@{user.username})
+                </span>
               </span>
               <button className="btn btn-outline-light btn-sm" onClick={logout}>
                 Logout

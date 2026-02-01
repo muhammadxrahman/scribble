@@ -211,7 +211,7 @@ public class DocumentService
 
         // Find user by username
         var userToShareWith = await _context.Users
-            .FirstOrDefaultAsync(u => u.Username == username);
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
         if (userToShareWith == null)
         {
