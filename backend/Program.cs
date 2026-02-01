@@ -125,6 +125,14 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Run migrations automatically on startup
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    Console.WriteLine("[INFO] Running database migrations...");
+    db.Database.Migrate();
+    Console.WriteLine("[INFO] Database migrations complete!");
+}
 
 // Configure HTTP request pipeline
 if (app.Environment.IsDevelopment())
