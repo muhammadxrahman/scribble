@@ -405,15 +405,17 @@ export default function EditorPage() {
                   <Link href="/dashboard" className="btn btn-outline-secondary">
                     ← Back
                   </Link>
-                  <button
-                    className="btn btn-outline-primary"
-                    onClick={() => {
-                      setShowShareModal(true);
-                      fetchSharedUsers();
-                    }}
-                  >
-                    👥 Share
-                  </button>
+                  {isOwner && (
+                    <button
+                      className="btn btn-outline-primary"
+                      onClick={() => {
+                        setShowShareModal(true);
+                        fetchSharedUsers();
+                      }}
+                    >
+                      👥 Share
+                    </button>
+                  )}
                   <input
                     type="text"
                     className="form-control"
