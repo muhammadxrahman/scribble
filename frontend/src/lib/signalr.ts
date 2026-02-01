@@ -35,8 +35,12 @@ class DocumentHubService {
       this.connection = null;
     }
 
+    const HUB_URL = process.env.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL.replace("/api", "")}/hubs/document`
+      : "http://localhost:5001/hubs/document";
+
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl("http://localhost:5001/hubs/document", {
+      .withUrl(HUB_URL, {
         accessTokenFactory: () => token,
       })
       .configureLogging(signalR.LogLevel.Warning)
