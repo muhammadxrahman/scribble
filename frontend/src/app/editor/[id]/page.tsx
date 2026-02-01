@@ -29,6 +29,8 @@ export default function EditorPage() {
 
   const editorRef = useRef<ProseMirrorEditorRef>(null);
   const contentSyncTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const [remoteCursors, setRemoteCursors] = useState<{
     [userId: string]: {
@@ -162,6 +164,9 @@ export default function EditorPage() {
       if (contentSyncTimeoutRef.current) {
         clearTimeout(contentSyncTimeoutRef.current);
       }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
       signalRConnected.current = false;
       documentHubService.leaveDocument(documentId).catch(() => {});
       documentHubService.disconnect().catch(() => {});
@@ -177,7 +182,11 @@ export default function EditorPage() {
 
     // When another user changes content
     documentHubService.onReceiveContentChange((data) => {
-      // Update content without triggering save
+      // Don't interrupt if user is actively typing
+      if (isTypingRef.current) {
+        console.log("⏸️ Skipping update - user is typing");
+        return;
+      }
       setContent(data.content);
       // Update ProseMirror editor
       editorRef.current?.updateContent(data.content);
@@ -472,11 +481,21 @@ export default function EditorPage() {
                   ref={editorRef}
                   content={content}
                   onChange={(newContent) => {
+                    // Mark as typing
+                    isTypingRef.current = true;
                     setContent(newContent);
-                    // Debounce SignalR sync - only send after 500ms of no typing
+                    // Clear existing timeouts
+                    if (typingTimeoutRef.current) {
+                      clearTimeout(typingTimeoutRef.current);
+                    }
                     if (contentSyncTimeoutRef.current) {
                       clearTimeout(contentSyncTimeoutRef.current);
                     }
+
+                    // After 500ms of no typing, mark as not typing and sync
+                    typingTimeoutRef.current = setTimeout(() => {
+                      isTypingRef.current = false;
+                    }, 500);
 
                     contentSyncTimeoutRef.current = setTimeout(() => {
                       documentHubService.sendContentChange(newContent, 0);
