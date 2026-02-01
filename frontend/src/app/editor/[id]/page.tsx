@@ -9,6 +9,8 @@ import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { ProseMirrorEditorRef } from "@/components/ProseMirrorEditor";
+import RemoteCursor from "@/components/RemoteCursor";
+import { getUserColor } from "@/lib/colors";
 
 // Dynamic import to avoid SSR issues with ProseMirror
 const ProseMirrorEditor = dynamic(
@@ -26,6 +28,15 @@ export default function EditorPage() {
   const signalRConnected = useRef(false);
 
   const editorRef = useRef<ProseMirrorEditorRef>(null);
+
+  const [remoteCursors, setRemoteCursors] = useState<{
+    [userId: string]: {
+      position: number;
+      username: string;
+      displayName: string;
+      color: string;
+    };
+  }>({});
 
   const [isOwner, setIsOwner] = useState(false);
   const [document, setDocument] = useState<Document | null>(null);
@@ -64,6 +75,19 @@ export default function EditorPage() {
   >([]);
 
   const maxCharacters = 50000;
+
+  // Throttle cursor updates to avoid spamming
+  const lastCursorSendRef = useRef<number>(0);
+  const handleCursorChange = useCallback(
+    (position: number) => {
+      const now = Date.now();
+      if (now - lastCursorSendRef.current < 200) return; // Throttle to 200ms
+
+      lastCursorSendRef.current = now;
+      documentHubService.sendCursorPosition(documentId, position);
+    },
+    [documentId],
+  );
 
   // Load document
   useEffect(() => {
@@ -164,6 +188,25 @@ export default function EditorPage() {
       editorRef.current?.updateContent(data.content);
     });
 
+    // When another user moves their cursor
+    documentHubService.onReceiveCursorPosition((data) => {
+      console.log(
+        "🖱️ Cursor update from:",
+        data.displayName,
+        "at position:",
+        data.position,
+      );
+      setRemoteCursors((prev) => ({
+        ...prev,
+        [data.userId]: {
+          position: data.position,
+          username: data.username,
+          displayName: data.displayName,
+          color: getUserColor(data.userId),
+        },
+      }));
+    });
+
     // When another user joins
     documentHubService.onUserJoined((data) => {
       console.log("👋 User joined:", data.displayName);
@@ -191,6 +234,12 @@ export default function EditorPage() {
       setActiveUsers((prev) =>
         prev.filter((u) => u.connectionId !== data.connectionId),
       );
+      // Remove their cursor
+      setRemoteCursors((prev) => {
+        const updated = { ...prev };
+        delete updated[data.userId];
+        return updated;
+      });
     });
 
     // Get current users already in the document (when you first join)
@@ -432,16 +481,30 @@ export default function EditorPage() {
           {/* Editor Area */}
           <div className="row">
             <div className="col-12">
-              <ProseMirrorEditor
-                ref={editorRef}
-                content={content}
-                onChange={(newContent) => {
-                  setContent(newContent);
-                  // Send to SignalR for real-time sync
-                  documentHubService.sendContentChange(newContent, 0);
-                }}
-                readOnly={!hasEditPermission}
-              />
+              <div style={{ position: "relative" }}>
+                <ProseMirrorEditor
+                  ref={editorRef}
+                  content={content}
+                  onChange={(newContent) => {
+                    setContent(newContent);
+                    // Send to SignalR for real-time sync
+                    documentHubService.sendContentChange(newContent, 0);
+                  }}
+                  onCursorChange={handleCursorChange}
+                  readOnly={!hasEditPermission}
+                />
+
+                {/* Render remote cursors - positioned absolutely within this container */}
+                {Object.entries(remoteCursors).map(([userId, cursor]) => (
+                  <RemoteCursor
+                    key={userId}
+                    position={cursor.position}
+                    username={cursor.displayName}
+                    color={cursor.color}
+                    editorView={editorRef.current?.getView() || null}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

@@ -19,16 +19,18 @@ interface ProseMirrorEditorProps {
   content: string;
   onChange: (content: string) => void;
   readOnly?: boolean;
+  onCursorChange?: (position: number) => void;
 }
 
 export interface ProseMirrorEditorRef {
   updateContent: (newContent: string) => void;
+  getView: () => EditorView | null;
 }
 
 const ProseMirrorEditor = forwardRef<
   ProseMirrorEditorRef,
   ProseMirrorEditorProps
->(({ content, onChange, readOnly = false }, ref) => {
+>(({ content, onChange, readOnly = false, onCursorChange }, ref) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const schemaRef = useRef<Schema | null>(null);
@@ -57,6 +59,7 @@ const ProseMirrorEditor = forwardRef<
 
       isUpdatingRef.current = false;
     },
+    getView: () => viewRef.current,
   }));
 
   // Create toolbar
@@ -271,6 +274,12 @@ const ProseMirrorEditor = forwardRef<
           const html = getHTMLFromState(newState, mySchema);
           onChange(html);
         }
+
+        // Send cursor position when selection changes
+        if (onCursorChange && !readOnly && transaction.selectionSet) {
+          const position = newState.selection.from;
+          onCursorChange(position);
+        }
       },
     });
 
@@ -304,25 +313,27 @@ const ProseMirrorEditor = forwardRef<
   };
 
   return (
-    <div style={{ 
-    display: 'flex', 
-    flexDirection: 'column',
-    height: '70vh',
-    border: '1px solid #dee2e6',
-    borderRadius: '4px',
-    overflow: 'hidden'
-  }}>
-    {!readOnly && <div ref={toolbarRef} style={{ flexShrink: 0 }} />}
-    <div 
-      ref={editorRef}
+    <div
       style={{
-        flex: 1,
-        overflowY: 'auto',
-        background: readOnly ? '#f8f9fa' : 'white',
-        padding: '20px',
+        display: "flex",
+        flexDirection: "column",
+        height: "70vh",
+        border: "1px solid #dee2e6",
+        borderRadius: "4px",
+        overflow: "hidden",
       }}
-    />
-  </div>
+    >
+      {!readOnly && <div ref={toolbarRef} style={{ flexShrink: 0 }} />}
+      <div
+        ref={editorRef}
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          background: readOnly ? "#f8f9fa" : "white",
+          padding: "20px",
+        }}
+      />
+    </div>
   );
 });
 

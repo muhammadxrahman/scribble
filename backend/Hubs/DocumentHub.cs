@@ -35,27 +35,27 @@ public class DocumentHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var connectionId = Context.ConnectionId;
-        
+
         if (ConnectionToUser.TryGetValue(connectionId, out var userId))
         {
             // Get user info
             var user = await _context.Users.FindAsync(userId);
-            
+
             // Find and leave all document groups
             var documentsToLeave = DocumentUsers
                 .Where(kvp => kvp.Value.Contains(connectionId))
                 .Select(kvp => kvp.Key)
                 .ToList();
-            
+
             foreach (var documentId in documentsToLeave)
             {
                 DocumentUsers[documentId].Remove(connectionId);
-                
+
                 if (DocumentUsers[documentId].Count == 0)
                 {
                     DocumentUsers.Remove(documentId);
                 }
-                
+
                 // Notify others
                 if (user != null)
                 {
@@ -68,10 +68,10 @@ public class DocumentHub : Hub
                     });
                 }
             }
-            
+
             ConnectionToUser.Remove(connectionId);
         }
-        
+
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -79,14 +79,14 @@ public class DocumentHub : Hub
     {
         var userId = GetCurrentUserId();
         var connectionId = Context.ConnectionId;
-        
+
         // Get user info
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return;
-        
+
         // Add to group
         await Groups.AddToGroupAsync(connectionId, documentId);
-        
+
         // Track user in document
         if (!DocumentUsers.ContainsKey(documentId))
         {
@@ -94,7 +94,7 @@ public class DocumentHub : Hub
         }
         DocumentUsers[documentId].Add(connectionId);
         ConnectionToUser[connectionId] = userId;
-        
+
         // Notify others in the group
         await Clients.OthersInGroup(documentId).SendAsync("UserJoined", new
         {
@@ -103,7 +103,7 @@ public class DocumentHub : Hub
             username = user.Username,
             connectionId = connectionId
         });
-        
+
         // Send current users to the caller
         var currentUsers = new List<object>();
         var seenUserIds = new HashSet<Guid>();
@@ -114,25 +114,25 @@ public class DocumentHub : Hub
                 if (connId != connectionId && ConnectionToUser.TryGetValue(connId, out var otherUserId))
                 {
                     // Only add if we haven't seen this user yet
-                if (!seenUserIds.Contains(otherUserId))
-                {
-                    seenUserIds.Add(otherUserId);
-                    var otherUser = await _context.Users.FindAsync(otherUserId);
-                    if (otherUser != null)
+                    if (!seenUserIds.Contains(otherUserId))
                     {
-                        currentUsers.Add(new
+                        seenUserIds.Add(otherUserId);
+                        var otherUser = await _context.Users.FindAsync(otherUserId);
+                        if (otherUser != null)
                         {
-                            userId = otherUserId,
-                            displayName = otherUser.DisplayName,
-                            username = otherUser.Username,
-                            connectionId = connId // Use first connection we find for this user
-                        });
+                            currentUsers.Add(new
+                            {
+                                userId = otherUserId,
+                                displayName = otherUser.DisplayName,
+                                username = otherUser.Username,
+                                connectionId = connId // Use first connection we find for this user
+                            });
+                        }
                     }
-                }
                 }
             }
         }
-        
+
         await Clients.Caller.SendAsync("CurrentUsers", currentUsers);
     }
 
@@ -140,13 +140,13 @@ public class DocumentHub : Hub
     {
         var userId = GetCurrentUserId();
         var connectionId = Context.ConnectionId;
-        
+
         await Groups.RemoveFromGroupAsync(connectionId, documentId);
-        
+
         if (DocumentUsers.ContainsKey(documentId))
         {
             DocumentUsers[documentId].Remove(connectionId);
-            
+
             var user = await _context.Users.FindAsync(userId);
             if (user != null)
             {
@@ -165,7 +165,7 @@ public class DocumentHub : Hub
     {
         var userId = GetCurrentUserId();
         var user = await _context.Users.FindAsync(userId);
-        
+
         if (user != null)
         {
             // Broadcast to all others in the document
@@ -184,14 +184,15 @@ public class DocumentHub : Hub
     {
         var userId = GetCurrentUserId();
         var user = await _context.Users.FindAsync(userId);
-        
+
         if (user != null)
         {
             await Clients.OthersInGroup(documentId).SendAsync("ReceiveCursorPosition", new
             {
                 userId = userId,
                 displayName = user.DisplayName,
-                position
+                username = user.Username,
+                position = position
             });
         }
     }

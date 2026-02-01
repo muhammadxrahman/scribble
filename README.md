@@ -26,7 +26,7 @@ A real-time collaborative document editor built with ASP.NET Core, Next.js, and 
 - Document editor with auto-save
 - Real-time character counting
 
-### Phase 3 (In progress)
+### Phase 3 (Completed)
 - Document sharing with permissions
 - Read/Edit access control
 - Real-time collaboration with SignalR
