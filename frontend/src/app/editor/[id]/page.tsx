@@ -11,7 +11,6 @@ import dynamic from "next/dynamic";
 import type { ProseMirrorEditorRef } from "@/components/ProseMirrorEditor";
 import RemoteCursor from "@/components/RemoteCursor";
 import { getUserColor } from "@/lib/colors";
-import { exportToPDF, printDocument } from "@/lib/export";
 
 // Dynamic import to avoid SSR issues with ProseMirror
 const ProseMirrorEditor = dynamic(
@@ -54,8 +53,6 @@ export default function EditorPage() {
   const [sharePermission, setSharePermission] = useState("Edit");
   const [shareError, setShareError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
-
-  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   const [hasEditPermission, setHasEditPermission] = useState(true);
   const [sharedUsers, setSharedUsers] = useState<
@@ -292,24 +289,6 @@ export default function EditorPage() {
     setCharacterCount(content.length);
   }, [content]);
 
-  // Click outside handler for export dropdown
-  useEffect(() => {
-    if (typeof window === "undefined" || !showExportDropdown) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".dropdown")) {
-        setShowExportDropdown(false);
-      }
-    };
-
-    window.document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      window.document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showExportDropdown]);
-
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     if (newContent.length <= maxCharacters) {
@@ -322,21 +301,6 @@ export default function EditorPage() {
     } else {
       setError(`Character limit reached (${maxCharacters} max)`);
     }
-  };
-
-  const handleExportPDF = async () => {
-    setShowExportDropdown(false);
-    try {
-      await exportToPDF(title, content);
-    } catch (error) {
-      console.error("Failed to export PDF:", error);
-      alert("Failed to export PDF. Please try again.");
-    }
-  };
-
-  const handlePrint = () => {
-    setShowExportDropdown(false);
-    printDocument(title, content);
   };
 
   const handleShare = async (e: React.FormEvent) => {
@@ -438,43 +402,6 @@ export default function EditorPage() {
                   >
                     👥 Share
                   </button>
-                  {/* Export Dropdown */}
-                  <div className="dropdown" style={{ position: "relative" }}>
-                    <button
-                      className="btn btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      onClick={() => setShowExportDropdown(!showExportDropdown)}
-                    >
-                      📄 Export
-                    </button>
-                    {showExportDropdown && (
-                      <div
-                        className="dropdown-menu show"
-                        style={{
-                          position: "absolute",
-                          top: "100%",
-                          left: 0,
-                          marginTop: "4px",
-                          zIndex: 1000,
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className="dropdown-item"
-                          onClick={handleExportPDF}
-                        >
-                          📑 Export as PDF
-                        </button>
-                        <button
-                          type="button"
-                          className="dropdown-item"
-                          onClick={handlePrint}
-                        >
-                          🖨️ Print
-                        </button>
-                      </div>
-                    )}
-                  </div>
                   <input
                     type="text"
                     className="form-control"
