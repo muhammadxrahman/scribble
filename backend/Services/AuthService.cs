@@ -53,12 +53,12 @@ public class AuthService
     public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
     {
         // check if username/email already exists
-        if (await _context.Users.AnyAsync(u => u.Username == request.Username))
+        if (await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower()))
         {
             return null;
         }
 
-        if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+        if (await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower()))
         {
             return null;
         }
@@ -98,8 +98,8 @@ public class AuthService
         // find by username or email
         var user = await _context.Users
             .FirstOrDefaultAsync(u => 
-                u.Username == request.UsernameOrEmail || 
-                u.Email == request.UsernameOrEmail);
+                u.Username.ToLower() == request.UsernameOrEmail.ToLower() || 
+                u.Email.ToLower() == request.UsernameOrEmail.ToLower());
 
         if (user == null)
         {
