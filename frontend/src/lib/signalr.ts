@@ -44,7 +44,6 @@ class DocumentHubService {
       .build();
 
     await this.connection.start();
-    console.log("✅ SignalR connected");
   }
 
   async disconnect(): Promise<void> {
@@ -55,7 +54,6 @@ class DocumentHubService {
     if (conn && conn.state !== signalR.HubConnectionState.Disconnected) {
       try {
         await conn.stop();
-        console.log("🔌 SignalR disconnected");
       } catch {}
     }
   }
@@ -70,7 +68,6 @@ class DocumentHubService {
 
     this.documentId = documentId;
     await this.connection.invoke("JoinDocument", documentId);
-    console.log("👋 Joined document:", documentId);
   }
 
   async leaveDocument(documentId: string): Promise<void> {
@@ -84,7 +81,6 @@ class DocumentHubService {
     try {
       await this.connection.invoke("LeaveDocument", documentId);
       this.documentId = null;
-      console.log("👋 Left document:", documentId);
     } catch {}
   }
 

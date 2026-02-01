@@ -100,15 +100,12 @@ export default function EditorPage() {
   }, [documentId]);
 
   const loadDocument = async () => {
-    console.log("Attempting to load document:", documentId);
 
     try {
       const [doc, permissionData] = await Promise.all([
         documentsApi.getById(documentId),
         documentsApi.getPermission(documentId),
       ]);
-      console.log("Document loaded successfully:", doc);
-      console.log("User permission:", permissionData.permission);
       setDocument(doc);
       setTitle(doc.title);
 
@@ -152,15 +149,11 @@ export default function EditorPage() {
     const connectAndJoin = async () => {
       try {
         signalRConnected.current = true;
-        console.log("🔄 Connecting to SignalR...");
 
         await documentHubService.connect(token);
-        console.log("✅ Connected");
-
         await documentHubService.joinDocument(documentId);
-        console.log("✅ Joined document:", documentId);
+
       } catch (error) {
-        console.error("❌ SignalR error:", error);
         signalRConnected.current = false;
       }
     };
@@ -184,7 +177,6 @@ export default function EditorPage() {
 
     // When another user changes content
     documentHubService.onReceiveContentChange((data) => {
-      console.log("📝 Received content change from:", data.displayName);
       // Update content without triggering save
       setContent(data.content);
       // Update ProseMirror editor
@@ -193,12 +185,6 @@ export default function EditorPage() {
 
     // When another user moves their cursor
     documentHubService.onReceiveCursorPosition((data) => {
-      console.log(
-        "🖱️ Cursor update from:",
-        data.displayName,
-        "at position:",
-        data.position,
-      );
       setRemoteCursors((prev) => ({
         ...prev,
         [data.userId]: {
@@ -212,7 +198,6 @@ export default function EditorPage() {
 
     // When another user joins
     documentHubService.onUserJoined((data) => {
-      console.log("👋 User joined:", data.displayName);
       if (data.userId === currentUserId) return;
       setActiveUsers((prev) => {
         // Don't add if already in list
@@ -233,7 +218,6 @@ export default function EditorPage() {
 
     // When another user leaves
     documentHubService.onUserLeft((data) => {
-      console.log("👋 User left:", data.displayName);
       setActiveUsers((prev) =>
         prev.filter((u) => u.connectionId !== data.connectionId),
       );
@@ -247,7 +231,6 @@ export default function EditorPage() {
 
     // Get current users already in the document (when you first join)
     documentHubService.onCurrentUsers((users) => {
-      console.log("📋 Current users:", users);
       // Filter out yourself
       const otherUsers = users.filter((u: any) => u.userId !== currentUserId);
       setActiveUsers(

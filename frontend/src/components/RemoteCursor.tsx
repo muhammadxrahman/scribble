@@ -36,7 +36,6 @@ export default function RemoteCursor({ position, username, color, editorView }: 
           left: domCoords.left - containerRect.left,
         });
       } catch (error) {
-        console.warn('Invalid cursor position:', position);
         setCoords(null);
       }
     };
