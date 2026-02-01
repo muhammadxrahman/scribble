@@ -10,10 +10,26 @@
   font-size: 16px;
   line-height: 1.6;
   color: #333;
-  padding: 20px;
-  min-height: 500px;
   outline: none;
   background: white;
+}
+
+/* Scrollbar styling */
+.ProseMirror::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ProseMirror::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.ProseMirror::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.ProseMirror::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 .ProseMirror p {
@@ -194,14 +210,15 @@
 /* Custom Toolbar Styles */
 .prosemirror-toolbar {
   background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
+  border-bottom: 1px solid #dee2e6;
   padding: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .toolbar-btn {

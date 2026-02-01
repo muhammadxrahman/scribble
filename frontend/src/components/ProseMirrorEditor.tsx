@@ -304,18 +304,25 @@ const ProseMirrorEditor = forwardRef<
   };
 
   return (
-    <div>
-      {!readOnly && <div ref={toolbarRef} />}
-      <div
-        ref={editorRef}
-        style={{
-          minHeight: "70vh",
-          border: "1px solid #dee2e6",
-          borderRadius: readOnly ? "4px" : "0 0 4px 4px",
-          background: readOnly ? "#f8f9fa" : "white",
-        }}
-      />
-    </div>
+    <div style={{ 
+    display: 'flex', 
+    flexDirection: 'column',
+    height: '70vh',
+    border: '1px solid #dee2e6',
+    borderRadius: '4px',
+    overflow: 'hidden'
+  }}>
+    {!readOnly && <div ref={toolbarRef} style={{ flexShrink: 0 }} />}
+    <div 
+      ref={editorRef}
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        background: readOnly ? '#f8f9fa' : 'white',
+        padding: '20px',
+      }}
+    />
+  </div>
   );
 });
 
