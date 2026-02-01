@@ -18,7 +18,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         // Get allowed origins from environment variable or use defaults
-        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+        var allowedOrigins = builder.Configuration["AllowedOrigins"]
+            ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
             ?? new[] { "http://localhost:3000" };
 
         policy.WithOrigins(allowedOrigins)
