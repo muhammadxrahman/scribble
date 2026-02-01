@@ -59,22 +59,17 @@ builder.Services.AddSwaggerGen(options =>
 // DB - Handle Railway's DATABASE_URL format
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// DEBUG: Log what we're getting
+// DEBUG
 Console.WriteLine($"[DEBUG] ConnectionString from config: '{connectionString ?? "NULL"}'");
-Console.WriteLine($"[DEBUG] DATABASE_URL env var: '{Environment.GetEnvironmentVariable("DATABASE_URL") ?? "NULL"}'");
-Console.WriteLine($"[DEBUG] ConnectionStrings__DefaultConnection env var: '{Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection") ?? "NULL"}'");
 
-// Convert Railway's postgres:// format to Npgsql format if needed
-if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgres://"))
+// Convert Railway's postgres:// or postgresql:// format to Npgsql format if needed
+if (!string.IsNullOrEmpty(connectionString) && 
+    (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
 {
     var uri = new Uri(connectionString);
     var userInfo = uri.UserInfo.Split(':');
     connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
-    Console.WriteLine($"[DEBUG] Converted connection string");
-}
-else
-{
-    Console.WriteLine($"[DEBUG] Connection string is null, empty, or doesn't start with postgres://");
+    Console.WriteLine($"[DEBUG] Converted connection string to Npgsql format");
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
