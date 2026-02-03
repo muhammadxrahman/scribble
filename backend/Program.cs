@@ -72,6 +72,8 @@ if (!string.IsNullOrEmpty(connectionString) &&
     Console.WriteLine($"[DEBUG] Converted connection string to Npgsql format");
 }
 
+builder.Services.AddHttpClient();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
