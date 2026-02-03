@@ -69,15 +69,110 @@ const ProseMirrorEditor = forwardRef<
     toolbarRef.current.innerHTML = "";
     toolbarRef.current.className = "prosemirror-toolbar";
 
+    // Helper to apply mark with attributes
+    const applyMarkWithAttrs = (markType: any, attrs: any) => {
+      return (state: any, dispatch: any) => {
+        const { from, to } = state.selection;
+        const mark = markType.create(attrs);
+
+        if (dispatch) {
+          dispatch(state.tr.addMark(from, to, mark));
+        }
+        return true;
+      };
+    };
+
     type ToolbarItem = {
       separator?: boolean;
       title?: string;
       content?: string;
       className?: string;
-      command?: (state: any, dispatch: any, view: any) => boolean;
+      command?: (
+        state: any,
+        dispatch: any,
+        view?: any,
+        value?: string,
+      ) => boolean;
+      isSelect?: boolean;
+      isColorPicker?: boolean;
+      selectOptions?: { value: string; label: string }[];
+      colorType?: "text" | "background";
     };
 
     const buttons: ToolbarItem[] = [
+      // Font Family Select
+      {
+        title: "Font Family",
+        isSelect: true,
+        selectOptions: [
+          { value: "", label: "Font" },
+          { value: "Arial, sans-serif", label: "Arial" },
+          { value: "'Times New Roman', serif", label: "Times New Roman" },
+          { value: "'Courier New', monospace", label: "Courier New" },
+          { value: "Georgia, serif", label: "Georgia" },
+          { value: "Verdana, sans-serif", label: "Verdana" },
+          { value: "'Comic Sans MS', cursive", label: "Comic Sans MS" },
+        ],
+        command: (state, dispatch, view, value) => {
+          if (value) {
+            applyMarkWithAttrs(mySchema.marks.fontFamily, {
+              fontFamily: value,
+            })(state, dispatch);
+          }
+          return true;
+        },
+      },
+      // Font Size Select
+      {
+        title: "Font Size",
+        isSelect: true,
+        selectOptions: [
+          { value: "", label: "Size" },
+          { value: "12px", label: "12" },
+          { value: "14px", label: "14" },
+          { value: "16px", label: "16" },
+          { value: "18px", label: "18" },
+          { value: "20px", label: "20" },
+          { value: "24px", label: "24" },
+          { value: "28px", label: "28" },
+          { value: "32px", label: "32" },
+        ],
+        command: (state, dispatch, view, value) => {
+          if (value) {
+            applyMarkWithAttrs(mySchema.marks.fontSize, { fontSize: value })(
+              state,
+              dispatch,
+            );
+          }
+          return true;
+        },
+      },
+      // Text Color
+      {
+        title: "Text Color",
+        isColorPicker: true,
+        colorType: "text",
+        command: (state, dispatch, view, value) => {
+          applyMarkWithAttrs(mySchema.marks.color, { color: value })(
+            state,
+            dispatch,
+          );
+          return true;
+        },
+      },
+      // Background Color
+      {
+        title: "Highlight Color",
+        isColorPicker: true,
+        colorType: "background",
+        command: (state, dispatch, view, value) => {
+          applyMarkWithAttrs(mySchema.marks.backgroundColor, {
+            backgroundColor: value,
+          })(state, dispatch);
+          return true;
+        },
+      },
+      { separator: true },
       {
         title: "Bold (Ctrl+B)",
         content: "B",
@@ -188,6 +283,54 @@ const ProseMirrorEditor = forwardRef<
         return;
       }
 
+      // Handle select dropdowns
+      if (item.isSelect && item.selectOptions) {
+        const select = document.createElement("select");
+        select.className = "toolbar-select";
+        select.title = item.title || "";
+
+        item.selectOptions.forEach((opt) => {
+          const option = document.createElement("option");
+          option.value = opt.value;
+          option.textContent = opt.label;
+          select.appendChild(option);
+        });
+
+        select.addEventListener("change", (e) => {
+          const value = (e.target as HTMLSelectElement).value;
+          if (item.command && value) {
+            item.command(view.state, view.dispatch, view, value);
+            view.focus();
+          }
+          select.value = ""; // Reset to placeholder
+        });
+
+        toolbarRef.current?.appendChild(select);
+        return;
+      }
+
+      // Handle color pickers
+      if (item.isColorPicker) {
+        const colorInput = document.createElement("input");
+        colorInput.type = "color";
+        colorInput.className = "toolbar-color-picker";
+        colorInput.title = item.title || "";
+        if (item.colorType === "background") {
+          colorInput.value = "#ffff00"; // Default yellow for highlight
+        }
+
+        colorInput.addEventListener("change", (e) => {
+          const value = (e.target as HTMLInputElement).value;
+          if (item.command) {
+            item.command(view.state, view.dispatch, view, value);
+            view.focus();
+          }
+        });
+
+        toolbarRef.current?.appendChild(colorInput);
+        return;
+      }
+
       const button = document.createElement("button");
       button.className = item.className || "";
       button.title = item.title || "";
@@ -211,6 +354,78 @@ const ProseMirrorEditor = forwardRef<
 
     const basicMarks = schema.spec.marks;
 
+    const colorMark: MarkSpec = {
+      attrs: { color: { default: null } },
+      parseDOM: [
+        {
+          tag: "span[style*=color]",
+          getAttrs: (dom) => {
+            const element = dom as HTMLElement;
+            const color = element.style.color;
+            return color ? { color } : false;
+          },
+        },
+      ],
+      toDOM: (mark) => {
+        return ["span", { style: `color: ${mark.attrs.color}` }, 0];
+      },
+    };
+
+    const backgroundColorMark: MarkSpec = {
+      attrs: { backgroundColor: { default: null } },
+      parseDOM: [
+        {
+          tag: "span[style*=background-color]",
+          getAttrs: (dom) => {
+            const element = dom as HTMLElement;
+            const backgroundColor = element.style.backgroundColor;
+            return backgroundColor ? { backgroundColor } : false;
+          },
+        },
+      ],
+      toDOM: (mark) => {
+        return [
+          "span",
+          { style: `background-color: ${mark.attrs.backgroundColor}` },
+          0,
+        ];
+      },
+    };
+
+    const fontSizeMark: MarkSpec = {
+      attrs: { fontSize: { default: null } },
+      parseDOM: [
+        {
+          tag: "span[style*=font-size]",
+          getAttrs: (dom) => {
+            const element = dom as HTMLElement;
+            const fontSize = element.style.fontSize;
+            return fontSize ? { fontSize } : false;
+          },
+        },
+      ],
+      toDOM: (mark) => {
+        return ["span", { style: `font-size: ${mark.attrs.fontSize}` }, 0];
+      },
+    };
+
+    const fontFamilyMark: MarkSpec = {
+      attrs: { fontFamily: { default: null } },
+      parseDOM: [
+        {
+          tag: "span[style*=font-family]",
+          getAttrs: (dom) => {
+            const element = dom as HTMLElement;
+            const fontFamily = element.style.fontFamily;
+            return fontFamily ? { fontFamily } : false;
+          },
+        },
+      ],
+      toDOM: (mark) => {
+        return ["span", { style: `font-family: ${mark.attrs.fontFamily}` }, 0];
+      },
+    };
+
     const extendedMarks = basicMarks.append({
       strikethrough: {
         parseDOM: [
@@ -228,6 +443,10 @@ const ProseMirrorEditor = forwardRef<
           return ["u", 0];
         },
       } as MarkSpec,
+      color: colorMark,
+      backgroundColor: backgroundColorMark,
+      fontSize: fontSizeMark,
+      fontFamily: fontFamilyMark,
     });
 
     // Create schema with lists

@@ -127,78 +127,20 @@
   font-style: italic;
 }
 
+/* Underline and Strikethrough */
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+.ProseMirror s,
+.ProseMirror strike {
+  text-decoration: line-through;
+}
+
 /* Selection */
 .ProseMirror-selectednode {
   outline: 2px solid #8cf;
   background: rgba(136, 204, 255, 0.1);
-}
-
-/* Menu Bar Styles */
-.ProseMirror-menubar {
-  border-bottom: 1px solid #ddd;
-  padding: 8px;
-  background: #f8f9fa;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 0;
-  border-radius: 4px 4px 0 0;
-}
-
-.ProseMirror-menubar-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: white;
-}
-
-.ProseMirror-menuitem {
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #333;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 32px;
-  height: 32px;
-}
-
-.ProseMirror-menuitem:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
-}
-
-.ProseMirror-menuitem.ProseMirror-menu-active {
-  background: #007bff;
-  color: white;
-  border-color: #0056b3;
-}
-
-.ProseMirror-menuitem[disabled] {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Tooltip */
-.ProseMirror-tooltip {
-  background: #333;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 3px;
-  font-size: 12px;
-}
-
-/* Placeholder */
-.ProseMirror p.is-empty:first-child::before {
-  content: attr(data-placeholder);
-  color: #aaa;
-  pointer-events: none;
-  position: absolute;
 }
 
 /* Read-only styling */
@@ -236,6 +178,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .toolbar-btn:hover {
@@ -255,23 +198,6 @@
   font-style: italic;
 }
 
-.toolbar-separator {
-  width: 1px;
-  height: 24px;
-  background: #dee2e6;
-  margin: 0 4px;
-}
-
-/* Underline and Strikethrough */
-.ProseMirror u {
-  text-decoration: underline;
-}
-
-.ProseMirror s,
-.ProseMirror strike {
-  text-decoration: line-through;
-}
-
 .toolbar-btn.underline {
   text-decoration: underline;
 }
@@ -280,12 +206,61 @@
   text-decoration: line-through;
 }
 
-/* H3 styles */
-.ProseMirror h3 {
-  font-size: 1.25em;
-  font-weight: 600;
-  margin: 0.5em 0;
-  line-height: 1.4;
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: #dee2e6;
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Toolbar selects and color pickers */
+.toolbar-select {
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 90px;
+  height: 32px;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.toolbar-select:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.toolbar-select:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.toolbar-color-picker {
+  width: 36px;
+  height: 32px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 2px;
+  background: white;
+  transition: all 0.2s;
+}
+
+.toolbar-color-picker:hover {
+  border-color: #adb5bd;
+}
+
+.toolbar-color-picker::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.toolbar-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 2px;
 }
 
 /* Cursor blink animation */
@@ -307,16 +282,34 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   .prosemirror-toolbar {
-    gap: 2px;
+    gap: 3px;
     padding: 6px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
   
   .toolbar-btn {
-    min-width: 36px;
-    padding: 6px 10px;
-    font-size: 14px;
+    min-width: 32px;
+    padding: 5px 8px;
+    font-size: 13px;
+    height: 30px;
+  }
+  
+  .toolbar-select {
+    min-width: 75px;
+    font-size: 12px;
+    height: 30px;
+    padding: 4px 6px;
+  }
+  
+  .toolbar-color-picker {
+    width: 32px;
+    height: 30px;
+  }
+  
+  .toolbar-separator {
+    height: 20px;
+    margin: 0 2px;
   }
   
   .ProseMirror {
@@ -335,9 +328,4 @@
   .ProseMirror h3 {
     font-size: 1.25em;
   }
-}
-
-/* Toolbar scrollable on small screens */
-.prosemirror-toolbar {
-  white-space: nowrap;
 }
