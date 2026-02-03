@@ -400,26 +400,32 @@ export default function EditorPage() {
           {/* Editor Header */}
           <div className="row mb-3">
             <div className="col-12">
-              <div className="d-flex justify-content-between align-items-center">
-                <div className="d-flex align-items-center gap-3">
-                  <Link href="/dashboard" className="btn btn-outline-secondary">
-                    ← Back
-                  </Link>
-                  {isOwner && (
-                    <button
-                      className="btn btn-outline-primary"
-                      onClick={() => {
-                        setShowShareModal(true);
-                        fetchSharedUsers();
-                      }}
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2 w-100 w-md-auto">
+                  <div className="d-flex gap-2">
+                    <Link
+                      href="/dashboard"
+                      className="btn btn-outline-secondary"
                     >
-                      👥 Share
-                    </button>
-                  )}
+                      ← Back
+                    </Link>
+                    {isOwner && (
+                      <button
+                        className="btn btn-outline-primary"
+                        onClick={() => {
+                          setShowShareModal(true);
+                          fetchSharedUsers();
+                        }}
+                      >
+                        👥 Share
+                      </button>
+                    )}
+                  </div>
+
                   <input
                     type="text"
                     className="form-control"
-                    style={{ width: "300px" }}
+                    style={{ maxWidth: "100%", minWidth: "200px" }}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Document title"
@@ -430,40 +436,50 @@ export default function EditorPage() {
                   />
                 </div>
 
-                <div className="d-flex align-items-center gap-3">
+                <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3">
                   <small className="text-white">
                     {characterCount.toLocaleString()} /{" "}
-                    {maxCharacters.toLocaleString()} characters
+                    {maxCharacters.toLocaleString()} chars
                   </small>
 
                   {/* User Presence Indicators */}
                   {activeUsers.length > 0 && (
-                    <div className="d-flex align-items-center gap-2">
-                      <small className="text-muted">•</small>
+                    <div className="d-flex align-items-center gap-1 flex-wrap">
                       {activeUsers.map((user) => (
                         <div
                           key={user.connectionId}
-                          className="badge bg-secondary"
+                          className="badge bg-secondary small"
                           title={`@${user.username}`}
                           style={{ cursor: "pointer" }}
                         >
                           {user.displayName}
                         </div>
                       ))}
-                      <small className="text-muted">viewing</small>
+                      <small className="text-muted d-none d-sm-inline">
+                        viewing
+                      </small>
                     </div>
                   )}
 
                   {saving && (
                     <small className="text-white">
                       <span className="spinner-border spinner-border-sm me-1" />
-                      Saving...
+                      <span className="d-none d-sm-inline">Saving...</span>
                     </small>
                   )}
 
                   {!saving && lastSaved && (
                     <small className="text-success">
-                      ✓ Saved {lastSaved.toLocaleTimeString()}
+                      ✓{" "}
+                      <span className="d-none d-sm-inline">
+                        Saved {lastSaved.toLocaleTimeString()}
+                      </span>
+                      <span className="d-inline d-sm-none">
+                        {lastSaved.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                     </small>
                   )}
                 </div>

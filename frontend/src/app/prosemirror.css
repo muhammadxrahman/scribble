@@ -303,3 +303,41 @@
   position: relative;
   pointer-events: none;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .prosemirror-toolbar {
+    gap: 2px;
+    padding: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .toolbar-btn {
+    min-width: 36px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+  
+  .ProseMirror {
+    font-size: 14px;
+    padding: 12px;
+  }
+  
+  .ProseMirror h1 {
+    font-size: 1.75em;
+  }
+  
+  .ProseMirror h2 {
+    font-size: 1.5em;
+  }
+  
+  .ProseMirror h3 {
+    font-size: 1.25em;
+  }
+}
+
+/* Toolbar scrollable on small screens */
+.prosemirror-toolbar {
+  white-space: nowrap;
+}
