@@ -69,7 +69,7 @@ if (!string.IsNullOrEmpty(connectionString) &&
     Console.WriteLine($"[DEBUG] Converted connection string to Npgsql format");
 }
 
-// connector
+// connector to microservice
 builder.Services.AddHttpClient();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
