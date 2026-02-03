@@ -59,9 +59,6 @@ builder.Services.AddSwaggerGen(options =>
 // DB - Handle Railway's DATABASE_URL format
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// DEBUG
-Console.WriteLine($"[DEBUG] ConnectionString from config: '{connectionString ?? "NULL"}'");
-
 // Convert Railway's postgres:// or postgresql:// format to Npgsql format if needed
 if (!string.IsNullOrEmpty(connectionString) && 
     (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
@@ -72,6 +69,7 @@ if (!string.IsNullOrEmpty(connectionString) &&
     Console.WriteLine($"[DEBUG] Converted connection string to Npgsql format");
 }
 
+// connector
 builder.Services.AddHttpClient();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
