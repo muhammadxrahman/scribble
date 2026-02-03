@@ -16,8 +16,7 @@ public class TestController : ControllerBase
     {
         try
         {
-            var aiServiceUrl = Environment.GetEnvironmentVariable("AI_SERVICE_URL") 
-                ?? "http://scribble-ai-prod.railway.internal:8000";
+            var aiServiceUrl = Environment.GetEnvironmentVariable("AI_SERVICE_URL");
             
             var response = await _httpClient.GetAsync($"{aiServiceUrl}/health");
             var content = await response.Content.ReadAsStringAsync();
