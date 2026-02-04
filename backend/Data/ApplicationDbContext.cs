@@ -5,10 +5,10 @@ namespace ScribbleAPI.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
-        
+
     }
 
     // Tables
@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<DocumentShare> DocumentShares { get; set; }
     public DbSet<DocumentVersion> DocumentVersions { get; set; }
     public DbSet<TokenBlacklist> TokenBlacklist { get; set; }
+    public DbSet<AIUsage> AIUsage { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,7 +42,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.OwnerId);
             entity.Property(e => e.Title).HasMaxLength(255);
             entity.Property(e => e.Content).HasColumnType("text");
-            
+
             // Relationship: Document belongs to User (Owner)
             entity.HasOne(d => d.Owner)
                 .WithMany(u => u.Documents)
@@ -54,13 +55,13 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.DocumentId, e.UserId }).IsUnique(); // One share per user per document
-            
+
             // Relationship: DocumentShare belongs to Document
             entity.HasOne(ds => ds.Document)
                 .WithMany(d => d.Shares)
                 .HasForeignKey(ds => ds.DocumentId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             // Relationship: DocumentShare belongs to User
             entity.HasOne(ds => ds.User)
                 .WithMany(u => u.SharedDocuments)
@@ -74,7 +75,7 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.DocumentId, e.VersionNumber }).IsUnique();
             entity.Property(e => e.Content).HasColumnType("text");
-            
+
             // Relationship: DocumentVersion belongs to Document
             entity.HasOne(dv => dv.Document)
                 .WithMany(d => d.Versions)
@@ -87,6 +88,20 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Token).IsUnique();
             entity.Property(e => e.Token).HasMaxLength(500);
+        });
+
+        // AIUsage
+        modelBuilder.Entity<AIUsage>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.Date });
+            entity.Property(e => e.Feature).HasMaxLength(50);
+
+            // Relationship: AIUsage belongs to User
+            entity.HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
     }

@@ -72,6 +72,9 @@ if (!string.IsNullOrEmpty(connectionString) &&
 // connector to microservice
 builder.Services.AddHttpClient();
 
+builder.Services.AddScoped<AIService>();
+builder.Services.AddScoped<AIUsageService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
