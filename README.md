@@ -139,8 +139,8 @@ dotnet dotnet-ef database update
 ## Project Structure
 ```
 scribble/
-├── backend/              # ASP.NET Core API
-│   ├── Controllers/      # API endpoints
+├── backend/             # ASP.NET Core API
+│   ├── Controllers/     # API endpoints
 │   ├── Models/          # Database entities
 │   ├── Services/        # Business logic
 │   ├── Data/            # DbContext & migrations
