@@ -174,3 +174,51 @@ async def improve_writing(request: TextRequest):
             status_code=500,
             detail=f"OpenAI API error: {str(e)}"
         )
+        
+
+@app.post("/generate", response_model=AIResponse)
+async def continue_writing(request: TextRequest):
+    """
+    Continue writing from the provided context.
+    Limits: 50-2,000 characters
+    """
+    
+    try:
+        completion = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a creative writing assistant. "
+                        "Continue the following text naturally and coherently. "
+                        "Write 1-2 paragraphs that flow from the provided context. "
+                        "Match the tone, style, and perspective of the original text. "
+                        "Return ONLY the continuation with no introductory phrases or explanations."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": request.text
+                }
+            ],
+            temperature=0.8,
+            max_tokens=500
+        )
+        
+        result = completion.choices[0].message.content
+        
+        return AIResponse(
+            result=result,
+            usage={
+                "input_tokens": completion.usage.prompt_tokens,
+                "output_tokens": completion.usage.completion_tokens,
+                "total_tokens": completion.usage.total_tokens
+            }
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"OpenAI API error: {str(e)}"
+        )
