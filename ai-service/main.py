@@ -10,9 +10,12 @@ app = FastAPI(title="Scribble AI Service", version="1.0.0")
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+MIN_CHARS = 50
+MAX_CHARS = 2000
+
 # Request/Response Models
 class TextRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=10000)
+    text: str = Field(..., min_length=MIN_CHARS, max_length=MAX_CHARS)
     
 class AIResponse(BaseModel):
     result: str
@@ -38,15 +41,7 @@ async def grammar_check(request: TextRequest):
     Fix grammar, spelling, and punctuation in the provided text.
     """
     
-    # Validate text length
-    if len(request.text) > 1000:
-        raise HTTPException(
-            status_code=400, 
-            detail="Text too long. Maximum 1000 characters for grammar check."
-        )
-    
     try:
-        # Call OpenAI API
         completion = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -65,14 +60,12 @@ async def grammar_check(request: TextRequest):
                     "content": request.text
                 }
             ],
-            temperature=0.3,  # Low temperature for consistent corrections
-            max_tokens=2000
+            temperature=0.3,
+            max_tokens=2500
         )
         
-        # Extract result
         corrected_text = completion.choices[0].message.content
         
-        # Return response with usage stats
         return AIResponse(
             result=corrected_text,
             usage={
@@ -95,19 +88,6 @@ async def summarize(request: TextRequest):
     Summarize the provided text into 3-5 key bullet points.
     """
     
-    # Validate text length
-    if len(request.text) > 5000:
-        raise HTTPException(
-            status_code=400, 
-            detail="Text too long. Maximum 5,000 characters for summarization."
-        )
-    
-    if len(request.text) < 100:
-        raise HTTPException(
-            status_code=400,
-            detail="Text too short. Minimum 100 characters for summarization."
-        )
-    
     try:
         completion = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -115,10 +95,11 @@ async def summarize(request: TextRequest):
                 {
                     "role": "system",
                     "content": (
-                        "You are a summarization assistant. "
-                        "Summarize the following text into 3-5 concise bullet points. "
-                        "Focus on the main ideas and key takeaways. "
-                        "Return ONLY the bullet points with no introductory text or explanations."
+                        "You are a writing improvement assistant. "
+                        "Enhance the following text for clarity, professionalism, and impact. "
+                        "Maintain the original meaning and core message. "
+                        "Improve word choice, sentence structure, and flow. "
+                        "Return ONLY the improved text with no explanations or commentary."
                     )
                 },
                 {
@@ -126,8 +107,8 @@ async def summarize(request: TextRequest):
                     "content": request.text
                 }
             ],
-            temperature=0.5,
-            max_tokens=500
+            temperature=0.7,
+            max_tokens=2500
         )
         
         result = completion.choices[0].message.content
@@ -154,69 +135,6 @@ async def improve_writing(request: TextRequest):
     Improve the writing quality, clarity, and professionalism of the text.
     """
     
-    # Validate text length
-    if len(request.text) > 1000:
-        raise HTTPException(
-            status_code=400, 
-            detail="Text too long. Maximum 1,000 characters for improvement."
-        )
-    
-    try:
-        completion = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a writing improvement assistant. "
-                        "Enhance the following text for clarity, professionalism, and impact. "
-                        "Maintain the original meaning and core message. "
-                        "Improve word choice, sentence structure, and flow. "
-                        "Return ONLY the improved text with no explanations or commentary."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": request.text
-                }
-            ],
-            temperature=0.7,
-            max_tokens=4000
-        )
-        
-        result = completion.choices[0].message.content
-        
-        return AIResponse(
-            result=result,
-            usage={
-                "input_tokens": completion.usage.prompt_tokens,
-                "output_tokens": completion.usage.completion_tokens,
-                "total_tokens": completion.usage.total_tokens
-            }
-        )
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"OpenAI API error: {str(e)}"
-        )
-
-
-@app.post("/generate", response_model=AIResponse)
-async def continue_writing(request: TextRequest):
-    """
-    Continue writing from the provided context.
-    """
-    
-    # Use last 1000 characters as context if text is too long
-    context = request.text[-1000:] if len(request.text) > 1000 else request.text
-    
-    if len(context) < 50:
-        raise HTTPException(
-            status_code=400,
-            detail="Need at least 50 characters of context to generate content."
-        )
-    
     try:
         completion = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -233,7 +151,7 @@ async def continue_writing(request: TextRequest):
                 },
                 {
                     "role": "user",
-                    "content": context
+                    "content": request.text
                 }
             ],
             temperature=0.8,
