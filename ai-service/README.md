@@ -32,3 +32,11 @@ uvicorn main:app --reload --port 8000
 ### `POST /grammar`
 Fix grammar, spelling, and punctuation.
 
+### `POST /summarize`
+Summarize provided text to key points.
+
+### `POST /improve`
+Improve quality and clarity of text.
+
+### `POST /generate`
+Take input text and expand on themes. Very dramatic for funsies!
