@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -61,6 +62,23 @@ export interface UpdateDocumentRequest {
   content?: string;
 }
 
+// AI Feature Types
+export type AIFeature = "grammar" | "improve" | "summarize" | "generate";
+
+export interface AIRequest {
+  text: string;
+}
+
+export interface AIResponse {
+  result: string;
+  remaining: number;
+}
+
+export interface AIRemainingResponse {
+  remaining: number;
+  limit: number;
+}
+
 // Auth API
 export const authApi = {
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
@@ -98,7 +116,7 @@ export const documentsApi = {
 
   update: async (
     id: string,
-    data: UpdateDocumentRequest
+    data: UpdateDocumentRequest,
   ): Promise<Document> => {
     const response = await api.put(`/Document/${id}`, data);
     return response.data;
@@ -112,7 +130,7 @@ export const documentsApi = {
   shareDocument: async (
     id: string,
     username: string,
-    permission: string
+    permission: string,
   ): Promise<void> => {
     await api.post(`/Document/${id}/share`, { username, permission });
   },
@@ -139,6 +157,27 @@ export const documentsApi = {
       return { permission: null };
     }
   },
+};
+
+// AI
+export const getRemainingAICalls = async (): Promise<AIRemainingResponse> => {
+  const response = await api.get("/ai/remaining");
+  return response.data;
+};
+
+export const callAIFeature = async (
+  feature: AIFeature,
+  text: string,
+): Promise<AIResponse> => {
+  try {
+    const response = await api.post(`/ai/${feature}`, { text });
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 429) {
+      throw new Error(error.response.data?.error || "Daily AI limit reached.");
+    }
+    throw new Error("AI service unavailable");
+  }
 };
 
 export default api;

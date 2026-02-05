@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { documentsApi, Document } from "@/lib/api";
+import {
+  documentsApi,
+  Document,
+  callAIFeature,
+  type AIFeature,
+} from "@/lib/api";
 import { documentHubService } from "@/lib/signalr";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
@@ -56,6 +61,23 @@ export default function EditorPage() {
   const [sharePermission, setSharePermission] = useState("Edit");
   const [shareError, setShareError] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
+
+  // AI feature states
+  const [showAIDropdown, setShowAIDropdown] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiFeature, setAIFeature] = useState<
+    "grammar" | "improve" | "summarize" | "generate" | null
+  >(null);
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionRange, setSelectionRange] = useState<{
+    from: number;
+    to: number;
+  } | null>(null);
+  const [aiResult, setAIResult] = useState("");
+  const [aiLoading, setAILoading] = useState(false);
+  const [aiError, setAIError] = useState("");
+  const [remainingAICalls, setRemainingAICalls] = useState<number | null>(null);
+  const [showAITooltip, setShowAITooltip] = useState(false);
 
   const [hasEditPermission, setHasEditPermission] = useState(true);
   const [sharedUsers, setSharedUsers] = useState<
@@ -358,6 +380,95 @@ export default function EditorPage() {
     }
   };
 
+  // Track text selection for AI features
+  const handleSelectionChange = () => {
+    if (!editorRef.current) return;
+
+    const view = editorRef.current.getView();
+    if (!view) return;
+
+    const { from, to } = view.state.selection;
+    const text = view.state.doc.textBetween(from, to, " ");
+
+    setSelectedText(text);
+    setSelectionRange({ from, to });
+  };
+
+  const isValidSelection = () => {
+    const length = selectedText.trim().length;
+    return length >= 50 && length <= 2000;
+  };
+
+  const getAIFeatureTitle = (feature: AIFeature) => {
+    switch (feature) {
+      case "grammar":
+        return "Grammar Check";
+      case "improve":
+        return "Improve Writing";
+      case "summarize":
+        return "Summarize";
+      case "generate":
+        return "Continue Writing";
+      default:
+        return "AI Feature";
+    }
+  };
+
+  const handleAIFeature = async (feature: AIFeature) => {
+    if (!isValidSelection()) {
+      alert(
+        "Please select between 50 and 2,000 characters to use AI features.",
+      );
+      return;
+    }
+
+    setAIFeature(feature);
+    setShowAIDropdown(false);
+    setShowAIModal(true);
+    setAILoading(true);
+    setAIError("");
+    setAIResult("");
+
+    try {
+      const data = await callAIFeature(feature, selectedText.trim());
+      setAIResult(data.result);
+      setRemainingAICalls(data.remaining);
+      setAILoading(false);
+    } catch (err) {
+      console.error("AI feature error:", err);
+      setAIError(
+        err instanceof Error
+          ? err.message
+          : "AI service is currently unavailable. Please try again.",
+      );
+      setAILoading(false);
+    }
+  };
+
+  const acceptAIResult = () => {
+    if (!editorRef.current || !selectionRange || !aiResult) return;
+
+    const view = editorRef.current.getView();
+    if (!view) return;
+
+    // Replace selection with AI result
+    const tr = view.state.tr.insertText(
+      aiResult,
+      selectionRange.from,
+      selectionRange.to,
+    );
+    view.dispatch(tr);
+    closeAIModal();
+  };
+
+  const closeAIModal = () => {
+    setShowAIModal(false);
+    setAIFeature(null);
+    setAIResult("");
+    setAIError("");
+    setAILoading(false);
+  };
+
   if (loading) {
     return (
       <ProtectedRoute>
@@ -435,6 +546,110 @@ export default function EditorPage() {
                     }
                   />
                 </div>
+
+                {/* AI Features Button */}
+                {hasEditPermission && (
+                  <div
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
+                    <div
+                      style={{ display: "inline-block" }}
+                      onMouseEnter={() => setShowAITooltip(true)}
+                      onMouseLeave={() => setShowAITooltip(false)}
+                    >
+                      <button
+                        className="btn btn-outline-light btn-sm"
+                        onClick={() => setShowAIDropdown(!showAIDropdown)}
+                        disabled={!isValidSelection()}
+                        style={
+                          !isValidSelection()
+                            ? { pointerEvents: "none" }
+                            : undefined
+                        }
+                      >
+                        AI
+                        {selectedText.trim().length > 0 &&
+                          ` (${selectedText.trim().length})`}
+                      </button>
+                    </div>
+
+                    {showAITooltip && (
+                      <div
+                        className="position-absolute bg-dark text-white px-3 py-2 rounded small"
+                        style={{
+                          top: "100%",
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          marginTop: "8px",
+                          zIndex: 1001,
+                          whiteSpace: "nowrap",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                        }}
+                      >
+                        {!selectedText.trim()
+                          ? "Select 50-2,000 characters to use AI"
+                          : selectedText.trim().length < 50
+                            ? `Selection too short (${selectedText.trim().length} chars). Min: 50`
+                            : selectedText.trim().length > 2000
+                              ? `Selection too long (${selectedText.trim().length.toLocaleString()} chars). Max: 2,000`
+                              : `${selectedText.trim().length} characters selected - Click for AI!`}
+
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "-4px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            width: 0,
+                            height: 0,
+                            borderLeft: "5px solid transparent",
+                            borderRight: "5px solid transparent",
+                            borderBottom: "5px solid #212529",
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* AI Dropdown Menu */}
+                    {showAIDropdown && isValidSelection() && (
+                      <div
+                        className="dropdown-menu show"
+                        style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          marginTop: "4px",
+                          zIndex: 1000,
+                        }}
+                      >
+                        <button
+                          className="dropdown-item"
+                          onClick={() => handleAIFeature("grammar")}
+                        >
+                          Grammar Check
+                        </button>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => handleAIFeature("improve")}
+                        >
+                          Improve Writing
+                        </button>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => handleAIFeature("summarize")}
+                        >
+                          Summarize
+                        </button>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => handleAIFeature("generate")}
+                        >
+                          Continue Writing
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="d-flex flex-wrap align-items-center gap-2 gap-md-3">
                   <small className="text-white">
@@ -519,7 +734,10 @@ export default function EditorPage() {
                       documentHubService.sendContentChange(newContent, 0);
                     }, 500);
                   }}
-                  onCursorChange={handleCursorChange}
+                  onCursorChange={(position) => {
+                    handleCursorChange(position);
+                    handleSelectionChange();
+                  }}
                   readOnly={!hasEditPermission}
                 />
 
@@ -676,6 +894,123 @@ export default function EditorPage() {
                         Done
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-backdrop show"></div>
+            </>
+          )}
+
+          {/* AI Modal */}
+          {showAIModal && (
+            <>
+              <div className="modal show d-block" tabIndex={-1}>
+                <div className="modal-dialog modal-lg">
+                  <div className="modal-content">
+                    <div className="modal-header">
+                      <h5 className="modal-title">
+                        {aiFeature && getAIFeatureTitle(aiFeature)}
+                      </h5>
+                      <button
+                        type="button"
+                        className="btn-close"
+                        onClick={closeAIModal}
+                      ></button>
+                    </div>
+
+                    <div className="modal-body">
+                      {aiLoading ? (
+                        <div className="text-center py-5">
+                          <div
+                            className="spinner-border text-primary"
+                            role="status"
+                          >
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                          <p className="mt-3 text-muted">
+                            Processing with AI...
+                          </p>
+                        </div>
+                      ) : aiError ? (
+                        <div className="alert alert-danger" role="alert">
+                          <strong>Error:</strong> {aiError}
+                        </div>
+                      ) : (
+                        <div className="row">
+                          <div className="col-md-6">
+                            <h6 className="text-muted mb-2">Original:</h6>
+                            <div
+                              className="p-3 border rounded bg-light"
+                              style={{
+                                minHeight: "200px",
+                                maxHeight: "400px",
+                                overflowY: "auto",
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {selectedText}
+                            </div>
+                          </div>
+
+                          <div className="col-md-6">
+                            <h6 className="text-primary mb-2">AI Result:</h6>
+                            <div
+                              className="p-3 border rounded bg-white"
+                              style={{
+                                minHeight: "200px",
+                                maxHeight: "400px",
+                                overflowY: "auto",
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                              }}
+                            >
+                              {aiResult}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {!aiLoading && !aiError && (
+                      <div className="modal-footer d-flex justify-content-between align-items-center">
+                        <small className="text-muted">
+                          ℹ️{" "}
+                          {remainingAICalls !== null
+                            ? `${remainingAICalls} of 5`
+                            : "..."}{" "}
+                          AI calls remaining today
+                        </small>
+                        <div>
+                          <button
+                            type="button"
+                            className="btn btn-secondary me-2"
+                            onClick={closeAIModal}
+                          >
+                            Reject
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={acceptAIResult}
+                          >
+                            Accept Changes
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {(aiLoading || aiError) && (
+                      <div className="modal-footer">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={closeAIModal}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
