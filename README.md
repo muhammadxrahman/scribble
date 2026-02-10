@@ -1,5 +1,7 @@
 # Scribble - Collaborative Document Editor
 
+**Live Site:** https://scribble-mu.vercel.app/login
+
 A real-time collaborative document editor with AI-powered writing assistance, built with ASP.NET Core, Next.js, and PostgreSQL.
 
 ## Tech Stack
